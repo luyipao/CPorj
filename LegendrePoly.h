@@ -28,6 +28,7 @@ public:
         setNumBasis(dim, maxDegree);
         setMesh(mesh);
     }
+    vector<vector<double>> l2Projection(double (*f)(vector<double>));
     double solve(const vector<double> x);
 };
 #endif

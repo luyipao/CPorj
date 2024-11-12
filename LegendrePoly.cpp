@@ -55,7 +55,7 @@ long long int LegendrePoly::getNumBasis(const int dim, const int maxDegree) {
     }
     return a / b;
 }
-
+/*
 double LegendrePoly::solve(const vector<double> x) {
     if (x.size() != this->dim) {
         cerr << "point dim don't correct" << endl;
@@ -77,9 +77,16 @@ double LegendrePoly::solve(const vector<double> x) {
     }
 
     vector<vector<double>> basisValue(this->dim + 1, vector<double>(this->maxDegree + 1));
-    for (int i = 0; i <= this->dim; ++i) {
-        for (int j = 0; j <= this->maxDegree; ++j) {
-            basisValue[i][j] = legendre(j, x[i]);
+    for (int i = 0; i < this->dim; ++i) {
+        for (int j = 0; j < mesh[i].size() - 1; ++i) {
+
         }
     }
+    return 0;
+}
+
+*/
+
+vector<vector<double>> LegendrePoly::l2projection(double (*f)(vector<double>)) {
+
 }
