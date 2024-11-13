@@ -1,7 +1,6 @@
 #ifndef LEGENDREPOLY_H
 #define LEGENDREPOLY_H
 #include <iostream>
-#include <Eigen/Dense> 
 #include <cmath>
 #include <vector>
 #include <iostream>
@@ -22,7 +21,6 @@ private:
     void setMesh(vector<vector<double>>& mesh);
 public:
     long long int getNumBasis(const int dim, const int maxDegree);
-    vector<int> getIndices(const int n);
     LegendrePoly() {}
     LegendrePoly(int dim, int maxDegree, vector<vector<double>>& mesh) {
         setNumBasis(dim, maxDegree);

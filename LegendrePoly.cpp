@@ -33,7 +33,7 @@ void LegendrePoly::setMesh(vector<vector<double>>& mesh) {
     this->cellsize = vector<vector<double>>(this->dim);
     for (int i = 0; i < this->dim; ++i) {
         for (int j = 1; j < mesh[i].size(); ++j) {
-            cellsize.emplace_back(mesh[j] - mesh[j - 1]);
+            cellsize.emplace_back(mesh[i][j] - mesh[i][j - 1]);
         }
         mesh[i].push_back(mesh[i].back() + epsilon);
     }
@@ -87,6 +87,3 @@ double LegendrePoly::solve(const vector<double> x) {
 
 */
 
-vector<vector<double>> LegendrePoly::l2projection(double (*f)(vector<double>)) {
-
-}
