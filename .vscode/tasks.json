@@ -2,17 +2,15 @@
     "tasks": [
         {
             "type": "cppbuild",
-            "label": "C/C++: g++.exe build active file",
-            "command": "C:\\Users\\ls\\scoop\\apps\\mingw-winlibs\\current\\bin\\g++.exe",
+            "label": "C/C++: g++ build active file",
+            "command": "/usr/bin/g++",
             "args": [
                 "-fdiagnostics-color=always",
-                "",
                 "-g",
-                "${fileDirname}\\*.cpp",
+                "${fileDirname}/functions/*",
+                "${file}",
                 "-o",
-                "${fileDirname}\\${fileBasenameNoExtension}.exe",
-                "-I",
-                "C:/Users/ls/scoop/apps/eigen3/current/eigen3"
+                "${fileDirname}/${fileBasenameNoExtension}"
             ],
             "options": {
                 "cwd": "${fileDirname}"

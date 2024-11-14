@@ -1,4 +1,4 @@
-#include "LegendrePoly.h"
+#include "../include/LegendrePoly.h"
 
 using namespace std;
 

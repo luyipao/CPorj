@@ -1,5 +1,5 @@
-#include "getVarDegree.h"
-#include "highDimFixedDegreePolyNum.h"
+#include "../include/getVarDegree.h"
+#include "../include/highDimFixedDegreePolyNum.h"
 #include <vector>
 #include <iostream>
 
