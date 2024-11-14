@@ -4,7 +4,16 @@
 #include <cmath>
 #include <vector>
 #include <iostream>
+#include <algorithm>
 #include <limits>
+#include <gsl/gsl_math.h>
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_monte.h>
+#include <gsl/gsl_monte_plain.h>
+#include <gsl/gsl_monte_miser.h>
+#include <gsl/gsl_monte_vegas.h>
+#include <gsl/gsl_sf_legendre.h>
+#include "getVarDegree.h"
 
 const double epsilon = std::numeric_limits<double>::epsilon();
 using namespace std;
@@ -16,7 +25,8 @@ private:
     int numBasis;
     vector<vector<double>> mesh;
     vector<vector<double>> cellsize;
-    vector<vector<double>> coeff;
+    vector<int> cellNum;
+    vector<vector<vector<double>>> coeff;
     void setNumBasis(const int dim, const int maxDegree);
     void setMesh(vector<vector<double>>& mesh);
 public:
@@ -26,7 +36,8 @@ public:
         setNumBasis(dim, maxDegree);
         setMesh(mesh);
     }
-    vector<vector<double>> l2Projection(double (*f)(vector<double>));
-    double solve(const vector<double> x);
+    void getCoeff();
+    // Overload operator()
+    double operator()(vector<double> x);
 };
 #endif

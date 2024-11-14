@@ -8,9 +8,12 @@
                 "-fdiagnostics-color=always",
                 "-g",
                 "${fileDirname}/functions/*",
-                "${file}",
+                "main.cpp",
                 "-o",
-                "${fileDirname}/${fileBasenameNoExtension}"
+                "${fileDirname}/${fileBasenameNoExtension}",
+                "-lgsl",
+                "-lgslcblas",
+                "-lm"
             ],
             "options": {
                 "cwd": "${fileDirname}"
