@@ -7,13 +7,16 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
+                //"-O3",
                 "${fileDirname}/functions/*",
                 "main.cpp",
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}",
                 "-lgsl",
                 "-lgslcblas",
-                "-lm"
+                "-lm",
+                "-I",
+                "/usr/include/eigen3",
             ],
             "options": {
                 "cwd": "${fileDirname}"

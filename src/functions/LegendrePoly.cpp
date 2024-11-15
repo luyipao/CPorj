@@ -1,6 +1,8 @@
 #include "../include/LegendrePoly.h"
+#include <iomanip>
 
 using namespace std;
+using namespace std::chrono;
 
 double normlizedP(int n, double x, double a, double b) {
     double map_x = (2 * x - a - b) / (b - a);
@@ -102,6 +104,9 @@ void LegendrePoly::getCoeff() {
     vector<vector<vector<double>>> coeff(mesh[0].size() - 1, vector<vector<double>>(mesh[1].size() - 1, vector<double>(this->numBasis)));
     Params params;
 
+    gsl_monte_function G = { &g, 2, &params };
+    gsl_monte_plain_state* s = gsl_monte_plain_alloc(this->dim);
+
     for (int i = 0; i < mesh[0].size() - 1; ++i) {
         for (int j = 0; j < mesh[1].size() - 1; ++j) {
             vector<double> tempCoeff;
@@ -118,18 +123,18 @@ void LegendrePoly::getCoeff() {
                 double xl[this->dim] = { mesh[0][i], mesh[1][j] };
                 double xu[this->dim] = { mesh[0][i + 1], mesh[1][j + 1] };
 
-                gsl_monte_function G = { &g, 2, &params };
-                {
-                    gsl_monte_plain_state* s = gsl_monte_plain_alloc(this->dim);
-                    gsl_monte_plain_integrate(&G, xl, xu, this->dim, calls, r, s, &res, &err);
-                    gsl_monte_plain_free(s);
-                }
+
+                gsl_monte_plain_integrate(&G, xl, xu, this->dim, calls, r, s, &res, &err);
+
+
                 tempCoeff.emplace_back(res);
             }
             coeff[i][j] = tempCoeff;
         }
     }
+
     this->coeff = coeff;
+    gsl_monte_plain_free(s);
     gsl_rng_free(r);
 }
 

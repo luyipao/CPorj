@@ -4,6 +4,7 @@
 #include <cmath>
 #include <vector>
 #include <iostream>
+#include <chrono>
 #include <algorithm>
 #include <limits>
 #include <gsl/gsl_math.h>
@@ -22,14 +23,16 @@ class LegendrePoly {
 private:
     int maxDegree;
     int dim;
-    int numBasis;
+
     vector<vector<double>> mesh;
     vector<vector<double>> cellsize;
     vector<int> cellNum;
-    vector<vector<vector<double>>> coeff;
+
     void setNumBasis(const int dim, const int maxDegree);
     void setMesh(vector<vector<double>>& mesh);
 public:
+    int numBasis;
+    vector<vector<vector<double>>> coeff;
     long long int getNumBasis(const int dim, const int maxDegree);
     LegendrePoly() {}
     LegendrePoly(int dim, int maxDegree, vector<vector<double>>& mesh) {
