@@ -1,4 +1,5 @@
 #include "../include/LegendrePoly.h"
+#include "../include/showProgressBar.h"
 #include <iomanip>
 
 using namespace std;
@@ -28,18 +29,9 @@ double g(double* x, size_t dim, void* param) {
         normlizedP(p->varDegree[1], x[1], p->Y[0], p->Y[1]);
 }
 
-/**
- * @brief set information of the basis functions
- *
- * @param maxDegree basis function max degree
- * @param dim number of variables in the polynomial
- * @return int number of basis functions
- */
-void LegendrePoly::setNumBasis(const int dim, const int maxDegree) {
-    this->maxDegree = maxDegree;
-    this->dim = dim;
-    this->numBasis = getNumBasis(dim, maxDegree);
-}
+
+
+
 /**
  * @brief set the mesh,
  *
@@ -89,7 +81,7 @@ void LegendrePoly::getCoeff() {
     }
     // some gsl monte carlo parameters
     double res, err;
-    size_t calls = 50000;
+    size_t calls = 500000;
     gsl_rng_env_setup();
 
     const gsl_rng_type* T;
@@ -103,14 +95,13 @@ void LegendrePoly::getCoeff() {
     // initialize 
     vector<vector<vector<double>>> coeff(mesh[0].size() - 1, vector<vector<double>>(mesh[1].size() - 1, vector<double>(this->numBasis)));
     Params params;
-
     gsl_monte_function G = { &g, 2, &params };
     gsl_monte_plain_state* s = gsl_monte_plain_alloc(this->dim);
 
     for (int i = 0; i < mesh[0].size() - 1; ++i) {
         for (int j = 0; j < mesh[1].size() - 1; ++j) {
             vector<double> tempCoeff;
-            for (int k = 1; k <= this->numBasis; ++k) {
+            for (int k = 0; k < this->numBasis; ++k) {
 
                 // update the parameters
                 auto varDegree = getVarDegree(this->dim, k);
@@ -129,6 +120,7 @@ void LegendrePoly::getCoeff() {
 
                 tempCoeff.emplace_back(res);
             }
+            showProgressBar(this->mesh[0].size() * this->mesh[1].size(), i*this->mesh[0].size() + j);
             coeff[i][j] = tempCoeff;
         }
     }
@@ -157,10 +149,10 @@ double LegendrePoly::operator()(vector<double> x) {
     }
 
     double res = 0;
-    for (int i = 1; i <= this->numBasis; ++i) {
+    for (int i = 0; i < this->numBasis; ++i) {
         vector<int> varDegree = getVarDegree(this->dim, i);
 
-        res += this->coeff[position[0]][position[1]][i - 1] *
+        res += this->coeff[position[0]][position[1]][i] *
             normlizedP(varDegree[0], x[0], this->mesh[0][position[0]], this->mesh[0][position[0] + 1]) *
             normlizedP(varDegree[1], x[1], this->mesh[1][position[1]], this->mesh[1][position[1] + 1]);
     }
