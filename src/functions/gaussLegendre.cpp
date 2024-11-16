@@ -12,9 +12,19 @@ using namespace Eigen;
  *
  * @return pair<VectorXd, VectorXd> nodes and weights
  */
-pair<VectorXd, VectorXd> gaussLegendrePoints(double a, double b, int n) {
+pair<VectorXd, VectorXd> gaussLegendrePoints(double a, double b, size_t n) {
     VectorXd nodes(n), weights(n);
-
+    if (n > 10) {
+        gsl_integration_glfixed_table* table = gsl_integration_glfixed_table_alloc(n);
+        double xi;
+        double wi;
+        for (int i = 0; i < n; ++i) {
+            gsl_integration_glfixed_point(a, b, i, &xi, &wi, table);
+            nodes(i) = xi;
+            weights(i) = wi;
+        }
+        return { nodes, weights };
+    }
     switch (n) {
     case 1:
         nodes << 0;
@@ -87,35 +97,33 @@ pair<VectorXd, VectorXd> gaussLegendrePoints(double a, double b, int n) {
             0.0666713443086881375935688, 0.0666713443086881375935688;
         break;
     default:
-        throw std::invalid_argument("Unsupported value of n. Please use n between 1 and 5.");
         break;
     }
     // normalize nodes and weights
     nodes.array() *= (b - a);
-    nodes.array() += (a + b) / 2.0;
+    nodes.array() += (a + b);
+    nodes.array() /= 2.0;
     weights.array() *= (b - a) / 2.0;
     return { nodes, weights };
 }
 
-double gaussLegendre(std::function<double(double)> f, double a, double b, int n) {
+double gaussLegendre(std::function<double(double)> f, double a, double b, size_t n) {
     auto [nodes, weights] = gaussLegendrePoints(a, b, n); // Generalize
     // Calculate the integral using vectorized operations
     VectorXd fB = nodes.unaryExpr(f); // 
-    double y = (fB.array() * weights.array()).sum(); 
+    double y = (fB.array() * weights.array()).sum();
 
     return y; // Return the integral result and the nodes
 }
 
-double gaussLegendre2D(std::function<double(double, double)> f, pair<double, double> x, pair<double, double> y, int n) {
+double gaussLegendre2D(std::function<double(double, double)> f, pair<double, double> x, pair<double, double> y, size_t n) {
     auto [xNodes, xWeights] = gaussLegendrePoints(x.first, x.second, n);
     auto [yNodes, yWeights] = gaussLegendrePoints(y.first, y.second, n);
     MatrixXd Values(n, n);
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
             Values(i, j) = f(xNodes[i], yNodes[j]);
-            cout << Values(i, j) << ' ';
         }
-        cout << endl;
     }
 
     // Calculate weights matrix
@@ -125,3 +133,4 @@ double gaussLegendre2D(std::function<double(double, double)> f, pair<double, dou
 
     return result; // Return the integral result
 }
+

@@ -18,28 +18,30 @@
 #include <Eigen/Dense>
 #include "getVarDegree.h"
 #include "getBasisNum.h"
+#include "gaussLegendre.h"
 
 using namespace std;
 using namespace Eigen;
 
 class SolFunc2D {
 private:
-    int maxDegree;
-    int basisNum;
+    size_t maxDegree;
+    size_t basisNum;
 
     vector<VectorXd> grid;
     vector<size_t> cellNum;
-
-    void setNumBasis(const int maxDegree);
+    void setNumBasis(const size_t maxDegree);
     void setGrid(const vector<double>& x, const vector<double>& y);
-    void setCoeff(function<double(double)> f);
+
+    vector<vector<VectorXd>> coeff;    
 public:
-    vector<vector<VectorXd>> coeff;
     SolFunc2D() {}
+    SolFunc2D(size_t maxDegree, double xa, double xb, double ya, double yb, size_t Nx, size_t Ny);
     SolFunc2D(int maxDegree, const vector<double>& x, const vector<double>& y) {
         setNumBasis(maxDegree);
         setGrid(x, y);
     }
-    double operator()(vector<double> x);
+    void setCoeff(function<double(double, double)> f);
+    double operator()(const vector<double> x);
 };
 #endif

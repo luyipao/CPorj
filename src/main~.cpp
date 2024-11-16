@@ -55,7 +55,7 @@ vector<vector<VectorXd>> RK(vector<vector<VectorXd>>& coeff, const MatrixXd& B, 
 
 
 
-int main() {
+int song() {
     double CFL = 0.05;
     double xa = 0;
     double xb = 2 * M_PI;

@@ -12,7 +12,7 @@ using namespace std;
  * @param n the n-th element of the polynomial, where n = 0, 1,...
  * @return vector<int> the degree of every variable, 0, 1, 2, ...
  */
-vector<int> getVarDegree(int dim, int n) {
+vector<int> getVarDegree(size_t dim, size_t n) {
     n = n + 1;
     int degree = 0;
     while (n > GhighDimFixedDegreePolyNum[dim][degree]) {
