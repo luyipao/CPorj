@@ -19,7 +19,7 @@
 #include "getVarDegree.h"
 #include "getBasisNum.h"
 #include "gaussLegendre.h"
-
+#include "showProgressBar.h"
 using namespace std;
 using namespace Eigen;
 
@@ -42,6 +42,13 @@ public:
         setGrid(x, y);
     }
     void setCoeff(function<double(double, double)> f);
+    void setCoeff(const vector<vector<VectorXd>>& coeff) {
+        this->coeff = coeff;
+    }
+    vector<vector<VectorXd>> getCoeff() {
+        return this->coeff;
+    }
     double operator()(const vector<double> x);
+
 };
 #endif

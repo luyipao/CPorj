@@ -1,5 +1,5 @@
 #include "../include/SolFunc2D.h"
-#include "../include/getBasisNum.h"
+
 #include <iomanip>
 
 double normlizedP(int n, double x, double a, double b) {
@@ -68,7 +68,7 @@ void SolFunc2D::setCoeff(function<double(double, double)> f) {
                 }
                 res = (Weight.array() * fValues.array() * basisValues.array()).sum();
                 this->coeff[i][j](k) = res;
-
+                showProgressBar(this->cellNum[0] * this->cellNum[1] - 1, i * this->cellNum[1] + j);
             }
         }
     }
