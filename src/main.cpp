@@ -36,9 +36,11 @@ vector<vector<VectorXd>> RK(const vector<vector<VectorXd>>& coeff, const MatrixX
             k1[i][j] = coeff[i][j] + t * k1[i][j];
         }
     }
+    /**
     cout << "k1[0][1] : \n" << k1[0][1] << endl;
     cout << "k1[1][0] : \n" << k1[1][0] << endl;
     cout << "k1[1][1] : \n" << k1[1][1] << endl;
+    */
     auto k2 = L(k1, B, D, E);
     for (int i = 0; i < N + 1; ++i) {
         for (int j = 0; j < N + 1; ++j) {
@@ -54,9 +56,76 @@ vector<vector<VectorXd>> RK(const vector<vector<VectorXd>>& coeff, const MatrixX
     }
     return k3;
 }
+MatrixXd RKDG2D(double xa, double xb, double ya, double yb, int Nx, int Ny, double tb, double CFL, int k) {
+    // 构造解空间。将初值函数映射到解空间
+    double dx = (xb - xa) / Nx;
+    double dy = (yb - ya) / Ny;
+    SolFunc2D P(2, xa, xb, ya, yb, Nx, Ny);
+    P.setCoeff(f);
+
+    // construct mass matrix
+    int coeffSize = getBasisNum(2, k);
+    MatrixXd B(coeffSize, coeffSize);
+    MatrixXd D(coeffSize, coeffSize);
+    MatrixXd E(coeffSize, coeffSize);
+    for (int i = 0; i < coeffSize; ++i) {
+        for (int j = 0; j < coeffSize; ++j) {
+            auto m = getVarDegree(2, i);
+            auto n = getVarDegree(2, j);
+            B(i, j) = sqrt((2 * m[1] + 1) * (2 * n[1] + 1) / dx / dy) * (m[0] == n[0]);
+            B(i, j) += sqrt((2 * m[0] + 1) * (2 * n[0] + 1)) / dx * (m[1] == n[1]);
+            B(i, j) -= (m[0] > n[0]) * ((m[0] - n[0]) % 2 == 1) * 2 * (m[1] == n[1]) * sqrt((2 * m[0] + 1) * (2 * n[0] + 1)) / dx;
+            B(i, j) -= (m[1] > n[1]) * ((m[1] - n[1]) % 2 == 1) * 2 * (m[0] == n[0]) * sqrt((2 * m[1] + 1) * (2 * n[1] + 1)) / dy;
+            D(i, j) = -std::pow(-1, m[0]) * (m[1] == n[1]) * sqrt((2 * m[0] + 1) * (2 * n[0] + 1)) / dx;
+            E(i, j) = -std::pow(-1, m[1]) * (m[0] == n[0]) * sqrt((2 * m[1] + 1) * (2 * n[1] + 1)) / dy;
+        }
+    }
+
+
+    // 将初值函数的系数表示为周期的形式，初值系数对于coeff[1:end, 1:end]的部分
+    vector<vector<VectorXd>> coeff(Nx + 1, vector<VectorXd>(Ny + 1, VectorXd(B.rows())));
+    for (int i = 1; i < Nx + 1; ++i) {
+        for (int j = 1; j < Ny + 1; ++j) {
+            coeff[i][j] = P.getCoeff()[i - 1][j - 1];
+        }
+    }
+    for (int j = 1; j < Ny + 1; ++j) {
+        coeff[0][j] = coeff[Nx][j];
+    }
+    for (int i = 0; i < Nx + 1; ++i) {
+        coeff[i][0] = coeff[i][Ny];
+    }
+
+    // RK 迭代
+    double t = CFL * pow(sqrt(dx * dy), (k + 1) / 3.0);
+    vector<double> T;
+    T.emplace_back(0);
+    while (T.back() < tb) {
+        T.emplace_back(T.back() + t);
+        coeff = RK(coeff, B, D, E, t);
+        showProgressBar(tb, T.back());
+    }
+
+    // 将得到的系数重新导入表示为解空间中的函数。
+    vector<vector<VectorXd>> C(Nx, vector<VectorXd>(Ny, VectorXd(B.rows())));
+    for (int i = 0; i < Nx; ++i) {
+        for (int j = 0; j < Ny; ++j) {
+            C[i][j] = coeff[i + 1][j + 1];
+        }
+    }
+    P.setCoeff(C);
+
+    // 计算网格点上的值
+    MatrixXd Error(Nx + 1, Ny + 1);
+    for (int i = 0; i <= Nx; ++i) {
+        for (int j = 0; j <= Ny; ++j) {
+            Error(i, j) = P({ i * dx, j * dy });
+        }
+    }
+    return Error;
+}
 
 int main() {
-
     double CFL = 0.05;
     double xa = 0;
     double xb = 2 * M_PI;
@@ -66,82 +135,25 @@ int main() {
     int Nx = 40;
     int Ny = 40;
     int k = 2;
-    double dx = (xb - xa) / Nx;
-    double dy = (yb - ya) / Ny;
 
-    SolFunc2D P(2, xa, xb, ya, yb, Nx, Ny);
-    cout << "-----------计算系数-----------" << endl;
-    P.setCoeff(f);
-    cout << endl;
-
-    for (int i = 0; i <= Nx; ++i) {
-        cout << P({ i * dx, M_PI / 2 }) << ' ';
-    }
-    cout << endl;
-
-    int coeffSize = getBasisNum(2, k);
-
-    // construct mass matrix
-    MatrixXd B(coeffSize, coeffSize);
-    MatrixXd D(coeffSize, coeffSize);
-    MatrixXd E(coeffSize, coeffSize);
-    for (int i = 0; i < coeffSize; ++i) {
-        for (int j = 0; j < coeffSize; ++j) {
-            auto m = getVarDegree(2, i);
-            auto n = getVarDegree(2, j);
-
-            // 使用 () 访问矩阵元素
-            B(i, j) = sqrt((2 * m[1] + 1) * (2 * n[1] + 1) / dx / dy) * (m[0] == n[0]);
-            B(i, j) += sqrt((2 * m[0] + 1) * (2 * n[0] + 1)) / dx * (m[1] == n[1]);
-            B(i, j) -= (m[0] > n[0]) * ((m[0] - n[0]) % 2 == 1) * 2 * (m[1] == n[1]) * sqrt((2 * m[0] + 1) * (2 * n[0] + 1)) / dx;
-            B(i, j) -= (m[1] > n[1]) * ((m[1] - n[1]) % 2 == 1) * 2 * (m[0] == n[0]) * sqrt((2 * m[1] + 1) * (2 * n[1] + 1)) / dy;
-
-            // 使用 std::pow 进行幂运算
-            D(i, j) = -std::pow(-1, m[0]) * (m[1] == n[1]) * sqrt((2 * m[0] + 1) * (2 * n[0] + 1)) / dx;
-            E(i, j) = -std::pow(-1, m[1]) * (m[0] == n[0]) * sqrt((2 * m[1] + 1) * (2 * n[1] + 1)) / dy;
-        }
-    }
-    cout << "B:\n" << B << std::endl;
-
-    std::cout << "D:\n" << D << std::endl;
-    cout << "E:\n" << E << std::endl;
-
-    double t = CFL * pow(sqrt(dx * dy), (k + 1) / 3.0);
-    vector<double> T;
-    T.emplace_back(0);
-
-    // 得到初值函数的系数
-    vector<vector<VectorXd>> coeff(Nx + 1, vector<VectorXd>(Ny + 1, VectorXd(coeffSize)));
-    for (int i = 1; i < Nx + 1; ++i) {
-        for (int j = 1; j < Ny + 1; ++j) {
-            coeff[i][j] = P.getCoeff()[i - 1][j - 1];
-        }
-    }
-    for (int j = 1;j < Ny + 1; ++j) {
-        coeff[0][j] = coeff[Nx][j];
-    }
-    for (int i = 0; i < Nx + 1; ++i) {
-        coeff[i][0] = coeff[i][Ny];
-    }
-
-    cout << "coeff[0][0] : " << coeff[0][0] << endl;
-
-    cout << "-----------RK迭代-----------" << endl;
-    while (T.back() < tb) {
-        T.emplace_back(T.back() + t);
-        coeff = RK(coeff, B, D, E, t);
-        showProgressBar(tb, T.back());
-    }
-    cout << endl;
-
-    vector<vector<VectorXd>> C(Nx, vector<VectorXd>(Ny, VectorXd(coeffSize)));
+    MatrixXd V1(Nx + 1, Ny + 1);
     for (int i = 0; i < Nx; ++i) {
         for (int j = 0; j < Ny; ++j) {
-            C[i][j] = coeff[i + 1][j + 1];
+            V1(i, j) = f(xa + i * (xb - xa) / Nx, ya + j * (yb - ya) / Ny);
         }
     }
-    P.setCoeff(C);
-    cout << P({ 0, 0 }) << endl;
-    cout << P({ M_PI,M_PI }) << endl;
+    auto E1 = RKDG2D(xa, xb, ya, yb, Nx, Ny, tb, CFL, k);
+    double error1 = (E1 - V1).norm() / sqrt((Nx + 1) * (Ny + 1));
+    Nx = 20;
+    Ny = 20;
+    MatrixXd V2(Nx + 1, Ny + 1);
+    for (int i = 0; i < Nx; ++i) {
+        for (int j = 0; j < Ny; ++j) {
+            V2(i, j) = f(xa + i * (xb - xa) / Nx, ya + j * (yb - ya) / Ny);
+        }
+    }
+    auto E2 = RKDG2D(xa, xb, ya, yb, Nx, Ny, tb, CFL, k);
+    double error2 = (V2 - E2).norm() / sqrt((Nx + 1) * (Ny + 1));
+    cout << log(error2 / error1) / log(2) << endl;
     return 0;
 }

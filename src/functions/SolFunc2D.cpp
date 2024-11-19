@@ -91,13 +91,14 @@ double SolFunc2D::operator()(vector<double> x) {
         if (position[i] > 0) {
             position[i] -= 1;
         }
+
     }
 
     double res = 0;
     for (int i = 0; i < this->basisNum; ++i) {
         vector<int> varDegree = getVarDegree(2, i);
 
-        res += this->coeff[position[0]][position[1]][i] *
+        res += this->coeff[position[0]][position[1]](i) *
             normlizedP(varDegree[0], x[0], this->grid[0][position[0]], this->grid[0][position[0] + 1]) *
             normlizedP(varDegree[1], x[1], this->grid[1][position[1]], this->grid[1][position[1] + 1]);
     }
