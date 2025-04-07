@@ -24,6 +24,8 @@
         "stack": "cpp",
         "string": "cpp",
         "unordered_map": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "*.tcc": "cpp",
+        "chrono": "cpp"
     }
 }

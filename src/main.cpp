@@ -134,7 +134,7 @@ int main() {
     double tb = 4 * M_PI;
     int Nx = 40;
     int Ny = 40;
-    int k = 2;
+    int k = 3;
 
     MatrixXd V1(Nx + 1, Ny + 1);
     for (int i = 0; i < Nx; ++i) {

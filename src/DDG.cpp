@@ -3,6 +3,7 @@
 #include "./include/gaussLegendre.h"
 #include <gsl/gsl_sf_legendre.h>
 #include<eigen3/unsupported/Eigen/KroneckerProduct> 
+#include <chrono>
 
 using namespace std;
 
@@ -14,20 +15,20 @@ double u(double x) {
  * _Pragma: coeff: u coeff in time t^n
  * k: max k - 1 order polynomial basis, all k base functions
  */
-/**
- * @brief L function for DDG without interface correction
- * @param coeff: u coeff in time t^n
- * @param A: mass matrix
- * @param B: mass matrix
- * @param D: mass matrix
- * @param E: mass matrix
- * @return u_t coeff for problem u_t = L(u)
- */
+ /**
+  * @brief L function for DDG without interface correction
+  * @param coeff: u coeff in time t^n
+  * @param A: mass matrix
+  * @param B: mass matrix
+  * @param D: mass matrix
+  * @param E: mass matrix
+  * @return u_t coeff for problem u_t = L(u)
+  */
 VectorXd L(const VectorXd& coeff, const MatrixXd& A, const MatrixXd& B, const MatrixXd& D, const MatrixXd& E) {
     MatrixXd M = B - D - E;
     return A.colPivHouseholderQr().solve(M * coeff);
 }
-/** 
+/**
  * @brief RK function for DDG without interface correction
  * @param coeff: u coeff in time t^n
  * @param A: mass matrix
@@ -56,7 +57,7 @@ VectorXd RK(const VectorXd& coeff, const MatrixXd& A, const MatrixXd& B, const M
  * @param T: Final time
  * @return error vector
  */
-VectorXd RKDG(const double Xa, const double Xb, int N, double CFL, int k, double T) {
+VectorXd RKDG(const double Xa, const double Xb, int N, double CFL, int k, double T, double beta0, double beta1) {
     VectorXd mesh(N + 1);
     double meshSize = (Xb - Xa) / N;
     for (int i = 0; i <= N; ++i) {
@@ -86,7 +87,7 @@ VectorXd RKDG(const double Xa, const double Xb, int N, double CFL, int k, double
         coeff[j] = M.colPivHouseholderQr().solve(b);
     }
 
-    //construct mass function
+    // construct mass function
     MatrixXd Aj = MatrixXd::Zero(k, k);
     for (int m = 1; m <= k; ++m) {
         for (int l = 1; l <= k; ++l) {
@@ -101,15 +102,26 @@ VectorXd RKDG(const double Xa, const double Xb, int N, double CFL, int k, double
     for (int l = 1; l <= k; ++l) {
         for (int m = 1; m <= k; ++m) {
             if (m == 1) {
-                Bj(l - 1, m - 1) = -1 / meshSize;
+                Bj(l - 1, m - 1) = -beta0 / meshSize;
+            }
+            else if (m == 2) {
+                Bj(l - 1, m - 1) = -beta0 / meshSize + 0.5 * (m - 1) / meshSize;
             }
             else {
-                Bj(l - 1, m - 1) = -1 / meshSize + 0.5 * (m - 1) / meshSize;
+                Bj(l - 1, m - 1) = -beta0 / meshSize + 0.5 * (m - 1) / meshSize - beta1 * (m - 1) * (m - 2) / meshSize;
             }
         }
-        Bjpp(l - 1, 0) = 1 / meshSize;
-        if (k > 1) {
+        if (k == 1) {
+            Bjpp(l - 1, 0) = beta0 / meshSize;
+        }
+        else if (k == 2) {
+            Bjpp(l - 1, 0) = beta0 / meshSize;
             Bjpp(l - 1, 1) = 0.5 / meshSize;
+        }
+        else if (k == 3) {
+            Bjpp(l - 1, 0) = beta0 / meshSize;
+            Bjpp(l - 1, 1) = 0.5 / meshSize;
+            Bjpp(l - 1, 2) = beta1 * 2 / meshSize;
         }
     }
 
@@ -124,15 +136,26 @@ VectorXd RKDG(const double Xa, const double Xb, int N, double CFL, int k, double
     for (int l = 1; l == 1; ++l) {
         for (int m = 1; m <= k; ++m) {
             if (m == 1) {
-                Djss(l - 1, m - 1) = -1 / meshSize;
+                Djss(l - 1, m - 1) = -beta0 / meshSize;
+            }
+            else if (m == 2) {
+                Djss(l - 1, m - 1) = -beta0 / meshSize + 0.5 * (m - 1) / meshSize;
             }
             else {
-                Djss(l - 1, m - 1) = -1 / meshSize + 0.5 * (m - 1) / meshSize;
+                Djss(l - 1, m - 1) = -beta0 / meshSize + 0.5 * (m - 1) / meshSize - beta1 * (m - 1) * (m - 2) / meshSize;
             }
         }
-        Dj(l - 1, 0) = 1 / meshSize;
-        if (k > 1) {
+        if (k == 1) {
+            Dj(l - 1, 0) = beta0 / meshSize;
+        }
+        else if (k == 2) {
+            Dj(l - 1, 0) = beta0 / meshSize;
             Dj(l - 1, 1) = 0.5 / meshSize;
+        }
+        else if (k == 3) {
+            Dj(l - 1, 0) = beta0 / meshSize;
+            Dj(l - 1, 1) = 0.5 / meshSize;
+            Dj(l - 1, 2) = beta1 * 2 / meshSize;
         }
     }
 
@@ -156,7 +179,7 @@ VectorXd RKDG(const double Xa, const double Xb, int N, double CFL, int k, double
             C(j * k + m - 1) = coeff[j](m - 1);
         }
     }
-    
+
     // RK 迭代
     double dt = CFL * meshSize * meshSize;
     int count = 0;
@@ -171,9 +194,10 @@ VectorXd RKDG(const double Xa, const double Xb, int N, double CFL, int k, double
         }
     }
     // 计算误差
-    VectorXd error(1000);
-    for (int j = 0; j < 1000; ++j) {
-        double x = (Xb - Xa) / 1000 * j;
+    int sampleNum = 1000;
+    VectorXd error(sampleNum);
+    for (int j = 0; j < sampleNum; ++j) {
+        double x = (Xb - Xa) / (sampleNum)*j;
         double result = 0;
         auto it = lower_bound(mesh.data(), mesh.data() + mesh.size(), x);
         int p = max(0, int(it - mesh.data()) - 1);
@@ -186,16 +210,20 @@ VectorXd RKDG(const double Xa, const double Xb, int N, double CFL, int k, double
 }
 
 int main() {
-    double CFL = 0.02;
+    auto start = std::chrono::system_clock::now();
+    double CFL = 0.0005;
     double T = 1;
     double Xa = 0;
     double Xb = 2 * M_PI;
-    int k = 2;
-    vector<int> Nlist = {10, 20, 40, 80};
+    int k = 3; // k is the polynomial degree, k-1 is the max order of polynomial basis, i.e., you should plus 1 when using k 
+    double theta = 0.5;
+    double beta0 = 7 / (12 * theta);
+    double beta1 = theta / 6;
+    vector<int> Nlist = { 10, 20, 40, 80 };
     vector<double> errorInf;
     vector<double> errorL2;
     for (auto N : Nlist) {
-        VectorXd error = RKDG(Xa, Xb, N, CFL, k, T);
+        VectorXd error = RKDG(Xa, Xb, N, CFL, k, T, beta0, beta1);
         double eInf = 0;
         double eL2 = 0;
         for (int i = 0; i < error.size(); ++i) {
@@ -203,7 +231,7 @@ int main() {
             eL2 += error(i) * error(i);
         }
         errorInf.emplace_back(eInf);
-        errorL2.emplace_back(sqrt(eL2 / 1000));
+        errorL2.emplace_back(sqrt(eL2 / (1000)));
     }
     cout << "误差分析:" << endl;
     cout << "N\tL2 error\tInf error" << endl;
@@ -221,5 +249,8 @@ int main() {
         double rate = log(errorL2[i - 1] / errorL2[i]) / log(2.0);
         cout << "收敛率 (N=" << Nlist[i - 1] << "→" << Nlist[i] << "): " << rate << endl;
     }
+    auto end = std::chrono::system_clock::now();
+    std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
     return 0;
 }
+
