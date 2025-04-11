@@ -215,11 +215,11 @@ int main() {
     double T = 1;
     double Xa = 0;
     double Xb = 2 * M_PI;
-    int k = 3; // k is the polynomial degree, k-1 is the max order of polynomial basis, i.e., you should plus 1 when using k 
+    int k = 4; // k is the polynomial degree, k-1 is the max order of polynomial basis, i.e., you should plus 1 when using k 
     double theta = 0.5;
     double beta0 = 7 / (12 * theta);
     double beta1 = theta / 6;
-    vector<int> Nlist = { 10, 20, 40, 80 };
+    vector<int> Nlist = { 10 };
     vector<double> errorInf;
     vector<double> errorL2;
     for (auto N : Nlist) {

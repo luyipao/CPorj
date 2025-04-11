@@ -26,6 +26,9 @@
         "unordered_map": "cpp",
         "iostream": "cpp",
         "*.tcc": "cpp",
-        "chrono": "cpp"
+        "chrono": "cpp",
+        "kroneckerproduct": "cpp",
+        "algorithm": "cpp",
+        "__bit_reference": "cpp"
     }
 }
