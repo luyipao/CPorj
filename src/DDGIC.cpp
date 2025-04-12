@@ -83,9 +83,11 @@ MatrixXd L(DDGIC& ddgic) {
         if (j != 0) {
             ux(j, LL) = C.col(j - 1).dot(uxHelp);
         }
-        ux(j, LR) = C.col(j)(1);
+        if (k >= 1) {
+            ux(j, LR) = C.col(j)(1);
+        }
         ux(j, RL) = C.col(j).dot(uxHelp);
-        if (j != N - 1) {
+        if (j != N - 1 && k >= 1) {
             ux(j, RR) = C.col(j + 1)(1);
         }
     }
@@ -97,9 +99,11 @@ MatrixXd L(DDGIC& ddgic) {
         if (j != 0) {
             uxx(j, LL) = C.col(j - 1).dot(uxxHelp);
         }
-        uxx(j, LR) = 2 * C.col(j)(2);
+        if (k >= 2) {
+            uxx(j, LR) = 2 * C.col(j)(2);
+        }
         uxx(j, RL) = C.col(j).dot(uxxHelp);
-        if (j != N - 1) {
+        if (j != N - 1 && k >= 2) {
             uxx(j, RR) = 2 * C.col(j + 1)(2);
         }
     }
@@ -119,9 +123,11 @@ MatrixXd L(DDGIC& ddgic) {
         VectorXd theta = VectorXd::Zero(k + 1);
 
         theta = u.col(RR).cwiseAbs().cwiseMax(u.col(RL).cwiseAbs());
-        BlR = 0.5 * uu.col(RR) - 0.5 * uu.col(RL) - (VectorXd)(theta.array() * (u.col(RR) - u.col(RL)).array());
+        VectorXd temp1 = (theta.array() * (u.col(RR) - u.col(RL)).array());
+        BlR = 0.5 * uu.col(RR) + 0.5 * uu.col(RL);
+        BlR -= temp1;
         theta = u.col(LR).cwiseAbs().cwiseMax(u.col(LL).cwiseAbs());
-        BlL = 0.5 * uu.col(LR) - 0.5 * uu.col(LL) - (VectorXd)(theta.array() * (u.col(LR) - u.col(LL)).array());
+        BlL = 0.5 * uu.col(LR) + 0.5 * uu.col(LL) - (VectorXd)(theta.array() * (u.col(LR) - u.col(LL)).array());
 
         if (l == 0) {
             B.row(l) = BlR - BlL;
@@ -137,12 +143,13 @@ MatrixXd L(DDGIC& ddgic) {
     for (int l = 0; l <= k; ++l) {
         VectorXd DlR = VectorXd::Zero(N);
         VectorXd DlL = VectorXd::Zero(N);
+        VectorXd temp1, temp2, temp3;
         if (l == 0) {
-            DlR = beta0 / h * (uu.col(RR) - uu.col(RL)) + 2 * (uux.col(RR) + uux.col(RL)) + beta1 * h * 2 * (uxux.col(RR) - uxux.col(RL) + uuxx.col(RR) - uxx.col(RL));
-            DlL = beta0 / h * (uu.col(LR) - uu.col(LL)) + 2 * (uux.col(LR) + uux.col(LL)) + beta1 * h * 2 * (uxux.col(LR) - uxux.col(LL) + uuxx.col(LR) - uxx.col(LL));
+            DlR = beta0 / h * (uu.col(RR) - uu.col(RL)) + (uux.col(RR) + uux.col(RL)) + beta1 * h * 2 * (uxux.col(RR) - uxux.col(RL) + uuxx.col(RR) - uuxx.col(RL));
+            DlL = beta0 / h * (uu.col(LR) - uu.col(LL)) + (uux.col(LR) + uux.col(LL)) + beta1 * h * 2 * (uxux.col(LR) - uxux.col(LL) + uuxx.col(LR) - uuxx.col(LL));
         }
         else {
-            DlR = beta0 / h * (uu.col(RR) - uu.col(RL)) + 2 * (uux.col(RR) + uux.col(RL)) + beta1 * h * 2 * (uxux.col(RR) - uxux.col(RL) + uuxx.col(RR) - uxx.col(RL));
+            DlR = beta0 / h * (uu.col(RR) - uu.col(RL)) + (uux.col(RR) + uux.col(RL)) + beta1 * h * 2 * (uxux.col(RR) - uxux.col(RL) + uuxx.col(RR) - uuxx.col(RL));
         }
         D.row(l) = DlR - DlL;
     }
@@ -155,8 +162,8 @@ MatrixXd L(DDGIC& ddgic) {
     for (int l = 0; l <= k; ++l) {
         for (int m = 0; m <= k; ++m) {
             for (int n = 0; n <= k; ++n) {
-                M1[l](m, n) = (l > 0) ? l * h / (m + n + l) : 0;
-                M2[l](m, n) = (n > 0 && l > 0) ? n * l * h / (m + n + l - 1) : 0;
+                M1[l](m, n) = (l > 0) ? l * 1.0 / (m + n + l) : 0;
+                M2[l](m, n) = (n > 0 && l > 0) ? n * l / (m + n + l - 1) / h : 0;
             }
         }
     }
@@ -177,10 +184,10 @@ MatrixXd L(DDGIC& ddgic) {
             ;
         }
         else {
-            F.row(l) = (uu.col(RR) - uu.col(RL)) * l + (uu.col(LR) - uu.col(LL)) * l * (l == 1);
+            F.row(l) = (uu.col(RR) - uu.col(RL)) * l / h + (uu.col(LR) - uu.col(LL)) * l * (l == 1) / h;
         }
     }
-    F = F.reshaped() / 8.0 / h;
+    F = F.reshaped() / 8.0;
 
     VectorXd b = -B + D + E - F;
     return A.colPivHouseholderQr().solve(b).reshaped(k + 1, N);
@@ -216,14 +223,14 @@ void RKDG(DDGIC& ddgic) {
 }
 
 int main() {
-    int k = 2;
-    int N = 10;
-    double T = 1;
+    int k = 1;
+    int N = 20;
+    double T = 0.5;
     double Xa = 0;
     double Xb = 1;
     double beta0 = 2.0;
     double beta1 = 1.0 / 12.0;
-    double CFL = 0.05;
+    double CFL = 0.0005;
     DDGIC ddgic(N, Xa, Xb, k, beta0, beta1, T, CFL);
     int LL = 0, LR = 1, RL = 2, RR = 3;
     double h = (Xb - Xa) / N; // 网格大小
@@ -257,25 +264,40 @@ int main() {
         C.col(j) = coeff[j]; // Assign each coeff[j] (which is a VectorXd) as a column of C
     }
 
+
+
+
+
     ddgic.setCoeff(C);
-    RKDG(ddgic);
-    
-    for (int j = 0; j < N; ++j)  {
+   // RKDG(ddgic);
+   ddgic.RKDDG();
+
+
+
+
+
+    for (int j = 0; j < N; ++j) {
         coeff[j] = ddgic.C.col(j);
     }
     // 计算误差
     int sampleNum = 1000;
     VectorXd error(sampleNum);
     for (int j = 0; j < sampleNum; ++j) {
-        double x = (Xb - Xa) / (sampleNum)*j;
+        double x = Xa + j * (Xb - Xa) / (sampleNum - 1);
         double result = 0;
         auto it = lower_bound(mesh.data(), mesh.data() + mesh.size(), x);
         int p = max(0, int(it - mesh.data()) - 1);
-        for (int i = 1; i <= k; ++i) {
-            result += coeff[p](i - 1) * pow((x - mesh(p)) / h, i - 1);
+        for (int i = 0; i <= k; ++i) {
+            result += coeff[p](i) * pow((x - mesh(p)) / h, i);
         }
-        error(j) = result;
+        error(j) = result - exp(x);
     }
+    double eInf = 0;
+    for (int i = 0; i < error.size(); ++i) {
+        eInf = max(eInf, abs(error(i)));
+    }
+
+    cout << (double)eInf << endl;
     return 0;
 }
 
