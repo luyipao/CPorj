@@ -10,7 +10,7 @@
                 "${file}",
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}",
-                "${fileDirname}/functions/*.cpp",
+                "/home/ls/CPorj/src/functions/*.cpp",
                 "-lm",
                 "-lgsl",
                 "-lgslcblas"

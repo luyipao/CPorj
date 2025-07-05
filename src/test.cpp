@@ -7,8 +7,11 @@ using namespace std;
 
 int main() {
     // Column-major 矩阵（默认）  
-    DDGIC ddgic;
-    ddgic.h = 1;
-    ddgic.L();
+    int N = 10;
+    VectorXd mesh = VectorXd::LinSpaced(N + 1, 0, 1); // Mesh points
+    double h = (mesh(N) - mesh(0)) / N; // 网格大小
+    double x = 1;
+    double Xa = 0;
+    cout << mesh.size() << endl;
     return 0;
 }

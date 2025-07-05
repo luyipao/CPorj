@@ -158,12 +158,12 @@ MatrixXd DDGIC::L() {
     RowVectorXd tempD1(N), tempD2(N), tempD3(N);
     for (int l = 0; l <= k; ++l) {
         tempD1 = beta0 / h * (uu.row(RR) - uu.row(RL));
-        tempD2 = 2 * (uux.row(RR) + uux.row(RL));
+        tempD2 = 0.5 * (uux.row(RR) + uux.row(RL));
         tempD3 = beta1 * h * 2 * (uuxx.row(RR) - uuxx.row(RL) + uxux.row(RR) - uxux.row(RL));
         D.row(l) = tempD1 + tempD2 + tempD3;
         if (l == 0) {
             tempD1 = beta0 / h * (uu.row(LR) - uu.row(LL));
-            tempD2 = 2 * (uux.row(LR) + uux.row(LL));
+            tempD2 = 0.5 * (uux.row(LR) + uux.row(LL));
             tempD3 = beta1 * h * 2 * (uuxx.row(LR) - uuxx.row(LL) + uxux.row(LR) - uxux.row(LL));
             D.row(l) -= tempD1 + tempD2 + tempD3;
         }

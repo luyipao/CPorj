@@ -223,8 +223,8 @@ void RKDG(DDGIC& ddgic) {
 }
 
 int main() {
-    int k = 1;
-    int N = 20;
+    int k = 0;
+    int N = 10;
     double T = 0.5;
     double Xa = 0;
     double Xb = 1;
