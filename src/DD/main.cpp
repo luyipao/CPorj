@@ -6,19 +6,19 @@ using namespace Eigen;
 using namespace std;
 
 int main() {
-    int k =2;
+    int k = 1;
     double Xa = 0.0;
     double Xb = 0.6;
 
-    double beta0 = 2;
-    double beta1 = 1 / 12;
+    // double beta0 = (k + 1) * (k + 1);
+    // double beta1 = 1 / (k + 1.0) / (2 * k);
+    double beta0 = 2.0;
+    double beta1 = 1.0 / 12.0;
     double T = 0.3;
     double CFL = 1;
 
-
-
     // construct initial function coeff
-    vector<int> Ns = { 20, 40, 80, 160};
+    vector<int> Ns = { 24, 48, 96 }; // 网格数
     vector<VectorXd> h_values;
     vector<double> L2_errors(Ns.size(), 0.0);
     vector<double> LInf_errors(Ns.size(), 0.0);
@@ -55,13 +55,15 @@ int main() {
         std::chrono::duration<double, std::micro> duration = end - start;
         cout << "Time s = " << duration.count() / 1e6 << " seconds" << endl;
         VectorXd X = VectorXd::LinSpaced(640000 + 1, Xa, Xb);
-        h_values.push_back(ddgic.getn(X));
+        VectorXd Y = ddgic.getE(X);
+        draw(ddgic.C);
+        h_values.push_back(Y);
     }
     // --- 误差分析 ---
     cout << "beta0 = " << beta0 << ", beta1 = " << beta1 << ", T = " << T << ", CFL = " << CFL << endl;
 
     for (size_t i = 0; i < Ns.size() - 1; ++i) {
-        
+
         VectorXd error_vec = h_values[i] - h_values[i + 1];
 
         double h_i = (Xb - Xa) / Ns[i];

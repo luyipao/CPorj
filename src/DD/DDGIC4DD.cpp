@@ -1,3 +1,4 @@
+
 #include <iostream>
 #include <gsl/gsl_integration.h>
 #include "../include/gaussLegendre.h"
@@ -105,7 +106,7 @@ public:
      * @return VectorXd      在每个点 X(i) 处的定积分
      */
     VectorXd getPriE_x(const VectorXd& X) {
-        const MatrixXd Coeff = C - n_d_C; // 被积函数的多项式系数
+        const MatrixXd Coeff = C - n_d_C; // 被积函数的多项式系数b
         VectorXd Y(X.size());
         Y.setZero();
 
@@ -181,8 +182,8 @@ public:
         auto [nodes2, weights2] = gaussLegendrePoints(0, 0.4, 10);
         E0 += getPriE_x(nodes2).dot(weights2);
         E0 += 0.4 * getPriE_x(0.6);
-        E0 *= 0.001546423010635;
-        VectorXd y = -0.001546423010635 * getPriE_x(X).array() + getPriE_x(0) + E0 - 1.5;
+        E0 *= PhyConst::e / PhyConst::epsilon;
+        VectorXd y = -PhyConst::e / PhyConst::epsilon * getPriE_x(X).array() + getPriE_x(0) + E0 - 1.5;
         return y;
     }
 
@@ -400,7 +401,7 @@ public:
         if (k >= 1) {
             for (int l = 1; l <= k; l++) {
                 for (int j = 0; j < N; j++) {
-                    double term1 = (u(RR, j) - u(RL, j)) * l / h * pow(1.0, l - 1);
+                    double term1 = (u(RR, j) - u(RL, j)) * l / h;
                     double term2 = (u(LR, j) - u(LL, j)) * l / h * (l == 1);
                     E_mat(l, j) = PhyConst::tau * PhyConst::theta * 0.5 * (term1 + term2);
                 }
@@ -433,12 +434,12 @@ public:
         setn(k3);
     }
     void RKDDG() {
-        int count = 0;
-        int L = T / dt;
-        while (count <= L) {
-            count++;
-            showProgressBar(L, count);
+        VectorXd Ypre, Ypost;
+        VectorXd X = VectorXd::LinSpaced(10000, Xa, Xb);
+        do {
+            Ypre = getn(X);
             RK();
-        }
+            Ypost = getn(X);
+        } while ((Ypre - Ypost).lpNorm<Infinity>() > 1e-4);
     }
 };

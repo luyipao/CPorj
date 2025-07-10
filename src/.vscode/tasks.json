@@ -1,3 +1,4 @@
+
 {
     "tasks": [
         {
@@ -10,7 +11,7 @@
                 "${file}",
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}",
-                "/home/ls/CPorj/src/functions/*.cpp",
+                "~/CProj/src/functions/*.cpp",
                 "-lm",
                 "-lgsl",
                 "-lgslcblas"
