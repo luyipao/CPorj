@@ -308,7 +308,7 @@ public:
         }
 
         // 储存电场E，和高斯积分点上的E，高斯积分点上的phi_x
-        /** 
+        /**
         VectorXd E = getE(mesh);
         vector<VectorXd> E_gauss;
         vector<vector<VectorXd>> phi_x_gauss(N, vector<VectorXd>(k + 1));
@@ -331,30 +331,30 @@ public:
 */
 // 1. 构建一个包含所有需要计算 E 的点的组合向量
 //    预先计算总尺寸，避免动态增长
-const int num_mesh_points = mesh.size();
-const int num_gauss_nodes = gaussPoints[0].first.size(); // 假设所有单元的高斯点数相同
-const int total_points = num_mesh_points + N * num_gauss_nodes;
+        const int num_mesh_points = mesh.size();
+        const int num_gauss_nodes = gaussPoints[0].first.size(); // 假设所有单元的高斯点数相同
+        const int total_points = num_mesh_points + N * num_gauss_nodes;
 
-VectorXd combined_points(total_points);
-combined_points.head(num_mesh_points) = mesh;
-for (int j = 0; j < N; ++j) {
-    const auto& [nodes, weights] = gaussPoints[j];
-    combined_points.segment(num_mesh_points + j * num_gauss_nodes, num_gauss_nodes) = nodes;
-}
+        VectorXd combined_points(total_points);
+        combined_points.head(num_mesh_points) = mesh;
+        for (int j = 0; j < N; ++j) {
+            const auto& [nodes, weights] = gaussPoints[j];
+            combined_points.segment(num_mesh_points + j * num_gauss_nodes, num_gauss_nodes) = nodes;
+        }
 
-VectorXd E_all = getE(combined_points);
-VectorXd E = E_all.head(num_mesh_points);
-vector<VectorXd> E_gauss(N); 
-for (int j = 0; j < N; ++j) {
-    E_gauss[j] = E_all.segment(num_mesh_points + j * num_gauss_nodes, num_gauss_nodes);
-}
+        VectorXd E_all = getE(combined_points);
+        VectorXd E = E_all.head(num_mesh_points);
+        vector<VectorXd> E_gauss(N);
+        for (int j = 0; j < N; ++j) {
+            E_gauss[j] = E_all.segment(num_mesh_points + j * num_gauss_nodes, num_gauss_nodes);
+        }
 
-vector<vector<VectorXd>> phi_x_gauss(N, vector<VectorXd>(k + 1));
-for (int j = 0; j < N; ++j) {
-    for (int i = 0; i <= k; ++i) {
-        phi_x_gauss[j][i] = phi_x(gaussPoints[j].first, i); 
-    }
-}
+        vector<vector<VectorXd>> phi_x_gauss(N, vector<VectorXd>(k + 1));
+        for (int j = 0; j < N; ++j) {
+            for (int i = 0; i <= k; ++i) {
+                phi_x_gauss[j][i] = phi_x(gaussPoints[j].first, i);
+            }
+        }
         // 计算通量项B
         MatrixXd B = MatrixXd::Zero(k + 1, N);
         VectorXd tempB1 = PhyConst::mu * (
