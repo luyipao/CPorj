@@ -18,7 +18,7 @@ int main() {
     double CFL = 1;
 
     // construct initial function coeff
-    vector<int> Ns = { 24, 48, 96 }; // 网格数
+    vector<int> Ns = { 24, 48, 96, 192,384, 768}; // 网格数
     vector<VectorXd> h_values;
     vector<double> L2_errors(Ns.size(), 0.0);
     vector<double> LInf_errors(Ns.size(), 0.0);

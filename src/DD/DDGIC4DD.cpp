@@ -176,10 +176,10 @@ public:
      * @return The value of E at point x.
      */
     VectorXd getE(const VectorXd& X) {
-        auto [nodes, weights] = gaussLegendrePoints(0, 0.6, 10);
+        auto [nodes, weights] = gaussLegendrePoints(0, 0.6);
         double E0 = 0;
         E0 += getPriE_x(nodes).dot(weights);
-        auto [nodes2, weights2] = gaussLegendrePoints(0, 0.4, 10);
+        auto [nodes2, weights2] = gaussLegendrePoints(0, 0.4);
         E0 += getPriE_x(nodes2).dot(weights2);
         E0 += 0.4 * getPriE_x(0.6);
         E0 *= PhyConst::e / PhyConst::epsilon;
@@ -359,8 +359,8 @@ public:
         // 计算通量项B
         MatrixXd B = MatrixXd::Zero(k + 1, N);
         VectorXd tempB1 = PhyConst::mu * (
-            E.segment(1, N).cwiseMin(0.0).cwiseProduct(u.row(RL).transpose()) +
-            E.segment(1, N).cwiseMax(0.0).cwiseProduct(u.row(RR).transpose())
+            E.segment(1, N).cwiseMin(0.0).cwiseProduct(u.row(RR).transpose()) +
+            E.segment(1, N).cwiseMax(0.0).cwiseProduct(u.row(RL).transpose())
             );
 
         VectorXd tempB2 = beta0 * (u.row(RR) - u.row(RL)).transpose() / h;
@@ -373,8 +373,8 @@ public:
 
             if (l == 0) {
                 VectorXd tempB5 = PhyConst::mu * (
-                    E.segment(0, N).cwiseMin(0.0).cwiseProduct(u.row(LL).transpose()) +
-                    E.segment(0, N).cwiseMax(0.0).cwiseProduct(u.row(LR).transpose())
+                    E.segment(0, N).cwiseMin(0.0).cwiseProduct(u.row(LR).transpose()) +
+                    E.segment(0, N).cwiseMax(0.0).cwiseProduct(u.row(LL).transpose())
                     );
 
                 VectorXd tempB6 = beta0 * (u.row(LR) - u.row(LL)).transpose() / h;
