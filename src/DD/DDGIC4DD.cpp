@@ -1,3 +1,4 @@
+
 #include <iostream>
 #include <gsl/gsl_integration.h>
 #include "../include/gaussLegendre.h"
@@ -9,6 +10,7 @@
 #include "../include/discretize.h"
 #include <unordered_map>
 #include <Eigen/Sparse>
+#include <fstream>
 
 using namespace Eigen;
 using namespace std;
@@ -105,11 +107,11 @@ public:
      * @return VectorXd      在每个点 X(i) 处的定积分
      */
     VectorXd getPriE_x(const VectorXd& X) {
-        const MatrixXd Coeff = C - n_d_C; // 被积函数的多项式系数
+        const MatrixXd Coeff = C - n_d_C; // 被积函数的多项式系数b
         VectorXd Y(X.size());
         Y.setZero();
 
-        // 优化：预计算系数矩阵的累积和，以避免在循环中重复求和。
+        // 预计算系数矩阵的累积和，以避免在循环中重复求和。
         // CumSumCoeff(m, j) = sum_{i=0 to j} Coeff(m, i)
         MatrixXd CumSumCoeff(k + 1, N);
         CumSumCoeff.col(0) = Coeff.col(0);
@@ -117,7 +119,7 @@ public:
             CumSumCoeff.col(j) = CumSumCoeff.col(j - 1) + Coeff.col(j);
         }
 
-        // 2. 获取所有点所在的单元格索引 (0-based)
+        // 获取所有点所在的单元格索引
         const VectorXi bins = discretize_uniform(X, mesh);
         for (int i = 0; i < X.size(); ++i) {
             const double xi = X(i);
@@ -175,14 +177,14 @@ public:
      * @return The value of E at point x.
      */
     VectorXd getE(const VectorXd& X) {
-        auto [nodes, weights] = gaussLegendrePoints(0, 0.6, 10);
+        auto [nodes, weights] = gaussLegendrePoints(0, 0.6);
         double E0 = 0;
         E0 += getPriE_x(nodes).dot(weights);
-        auto [nodes2, weights2] = gaussLegendrePoints(0, 0.4, 10);
+        auto [nodes2, weights2] = gaussLegendrePoints(0, 0.4);
         E0 += getPriE_x(nodes2).dot(weights2);
         E0 += 0.4 * getPriE_x(0.6);
-        E0 *= 0.001546423010635;
-        VectorXd y = -0.001546423010635 * getPriE_x(X).array() + getPriE_x(0) + E0 - 1.5;
+        E0 *= PhyConst::e / PhyConst::epsilon;
+        VectorXd y = -PhyConst::e / PhyConst::epsilon * getPriE_x(X).array() + getPriE_x(0) + E0 - 1.5;
         return y;
     }
 
@@ -308,7 +310,7 @@ public:
         }
 
         // 储存电场E，和高斯积分点上的E，高斯积分点上的phi_x
-        /** 
+        /**
         VectorXd E = getE(mesh);
         vector<VectorXd> E_gauss;
         vector<vector<VectorXd>> phi_x_gauss(N, vector<VectorXd>(k + 1));
@@ -331,30 +333,30 @@ public:
 */
 // 1. 构建一个包含所有需要计算 E 的点的组合向量
 //    预先计算总尺寸，避免动态增长
-const int num_mesh_points = mesh.size();
-const int num_gauss_nodes = gaussPoints[0].first.size(); // 假设所有单元的高斯点数相同
-const int total_points = num_mesh_points + N * num_gauss_nodes;
+        const int num_mesh_points = mesh.size();
+        const int num_gauss_nodes = gaussPoints[0].first.size(); // 假设所有单元的高斯点数相同
+        const int total_points = num_mesh_points + N * num_gauss_nodes;
 
-VectorXd combined_points(total_points);
-combined_points.head(num_mesh_points) = mesh;
-for (int j = 0; j < N; ++j) {
-    const auto& [nodes, weights] = gaussPoints[j];
-    combined_points.segment(num_mesh_points + j * num_gauss_nodes, num_gauss_nodes) = nodes;
-}
+        VectorXd combined_points(total_points);
+        combined_points.head(num_mesh_points) = mesh;
+        for (int j = 0; j < N; ++j) {
+            const auto& [nodes, weights] = gaussPoints[j];
+            combined_points.segment(num_mesh_points + j * num_gauss_nodes, num_gauss_nodes) = nodes;
+        }
 
-VectorXd E_all = getE(combined_points);
-VectorXd E = E_all.head(num_mesh_points);
-vector<VectorXd> E_gauss(N); 
-for (int j = 0; j < N; ++j) {
-    E_gauss[j] = E_all.segment(num_mesh_points + j * num_gauss_nodes, num_gauss_nodes);
-}
+        VectorXd E_all = getE(combined_points);
+        VectorXd E = E_all.head(num_mesh_points);
+        vector<VectorXd> E_gauss(N);
+        for (int j = 0; j < N; ++j) {
+            E_gauss[j] = E_all.segment(num_mesh_points + j * num_gauss_nodes, num_gauss_nodes);
+        }
 
-vector<vector<VectorXd>> phi_x_gauss(N, vector<VectorXd>(k + 1));
-for (int j = 0; j < N; ++j) {
-    for (int i = 0; i <= k; ++i) {
-        phi_x_gauss[j][i] = phi_x(gaussPoints[j].first, i); 
-    }
-}
+        vector<vector<VectorXd>> phi_x_gauss(N, vector<VectorXd>(k + 1));
+        for (int j = 0; j < N; ++j) {
+            for (int i = 0; i <= k; ++i) {
+                phi_x_gauss[j][i] = phi_x(gaussPoints[j].first, i);
+            }
+        }
         // 计算通量项B
         MatrixXd B = MatrixXd::Zero(k + 1, N);
         VectorXd tempB1 = PhyConst::mu * (
@@ -400,7 +402,7 @@ for (int j = 0; j < N; ++j) {
         if (k >= 1) {
             for (int l = 1; l <= k; l++) {
                 for (int j = 0; j < N; j++) {
-                    double term1 = (u(RR, j) - u(RL, j)) * l / h * pow(1.0, l - 1);
+                    double term1 = (u(RR, j) - u(RL, j)) * l / h;
                     double term2 = (u(LR, j) - u(LL, j)) * l / h * (l == 1);
                     E_mat(l, j) = PhyConst::tau * PhyConst::theta * 0.5 * (term1 + term2);
                 }
@@ -421,24 +423,47 @@ for (int j = 0; j < N; ++j) {
     }
 
     void RK() {
-        MatrixXd coeff = C;
+        MatrixXd C_pre = C;
         auto k1 = L();
-        k1 = coeff + dt * k1;
+        k1 = C_pre + dt * k1;
         setn(k1);
         auto k2 = L();
-        k2 = 3.0 / 4.0 * coeff + 1.0 / 4.0 * k1 + 1.0 / 4.0 * dt * k2;
+        k2 = 3.0 / 4.0 * C_pre + 1.0 / 4.0 * k1 + 1.0 / 4.0 * dt * k2;
         setn(k2);
         auto k3 = L();
-        k3 = 1.0 / 3.0 * coeff + 2.0 / 3.0 * k2 + 2.0 / 3.0 * dt * k3;
+        k3 = 1.0 / 3.0 * C_pre + 2.0 / 3.0 * k2 + 2.0 / 3.0 * dt * k3;
         setn(k3);
     }
     void RKDDG() {
-        int count = 0;
-        int L = T / dt;
-        while (count <= L) {
-            count++;
-            showProgressBar(L, count);
+        VectorXd Ypre, Ypost;
+        double TT = 0;
+        VectorXd X = VectorXd::LinSpaced(1000, Xa, Xb);
+        do {
+            Ypre = getn(X);
+            // drawn();
             RK();
+            Ypost = getn(X);
+            TT += dt;
+        } while ((Ypre - Ypost).lpNorm<Infinity>() > 1e-5 || (Ypre-Ypost).lpNorm<2>() > 1e-5);
+        T= TT;
+    }
+    void drawn() {
+
+        // 生成x值：从-10到10的200个点
+        const int num_points = 1000;
+        Eigen::VectorXd x = Eigen::VectorXd::LinSpaced(num_points, 0, 0.6);
+        auto y = getn(x);
+        // 保存数据到文件
+        std::ofstream file("data.txt");
+        if (file.is_open()) {
+            for (int i = 0; i < x.size(); ++i) {
+                file << x(i) << " " << y(i) << "\n";
+            }
+            file.close();
+            std::cout << "数据已保存到 data.txt" << std::endl;
+        }
+        else {
+            std::cerr << "无法打开文件！" << std::endl;
         }
     }
 };

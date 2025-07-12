@@ -1,9 +1,7 @@
 .PHONY: all test draw
 all:
-	clear
 	g++ main.cpp ./../functions/*.cpp -O3 -march=native -ffast-math -DNDEBUG -o main  -lgslcblas -lm -lgsl
 	./main
-	python draw.py
 draw:
 	g++ draw.cpp ./../functions/*.cpp -O3 -o draw  -lgslcblas -lm -lgsl
 	./draw
