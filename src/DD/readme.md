@@ -14,3 +14,7 @@ $$
 $$
 \widehat{En} = \min\set{E,0}n^+ + \max \set{E, 0} n^-
 $$
+
+## 数值模拟
+
+误差分析对于$\beta_0$敏感

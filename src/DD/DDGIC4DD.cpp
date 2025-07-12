@@ -10,6 +10,7 @@
 #include "../include/discretize.h"
 #include <unordered_map>
 #include <Eigen/Sparse>
+#include <fstream>
 
 using namespace Eigen;
 using namespace std;
@@ -110,7 +111,7 @@ public:
         VectorXd Y(X.size());
         Y.setZero();
 
-        // 优化：预计算系数矩阵的累积和，以避免在循环中重复求和。
+        // 预计算系数矩阵的累积和，以避免在循环中重复求和。
         // CumSumCoeff(m, j) = sum_{i=0 to j} Coeff(m, i)
         MatrixXd CumSumCoeff(k + 1, N);
         CumSumCoeff.col(0) = Coeff.col(0);
@@ -118,7 +119,7 @@ public:
             CumSumCoeff.col(j) = CumSumCoeff.col(j - 1) + Coeff.col(j);
         }
 
-        // 2. 获取所有点所在的单元格索引 (0-based)
+        // 获取所有点所在的单元格索引
         const VectorXi bins = discretize_uniform(X, mesh);
         for (int i = 0; i < X.size(); ++i) {
             const double xi = X(i);
@@ -359,8 +360,8 @@ public:
         // 计算通量项B
         MatrixXd B = MatrixXd::Zero(k + 1, N);
         VectorXd tempB1 = PhyConst::mu * (
-            E.segment(1, N).cwiseMin(0.0).cwiseProduct(u.row(RR).transpose()) +
-            E.segment(1, N).cwiseMax(0.0).cwiseProduct(u.row(RL).transpose())
+            E.segment(1, N).cwiseMin(0.0).cwiseProduct(u.row(RL).transpose()) +
+            E.segment(1, N).cwiseMax(0.0).cwiseProduct(u.row(RR).transpose())
             );
 
         VectorXd tempB2 = beta0 * (u.row(RR) - u.row(RL)).transpose() / h;
@@ -373,8 +374,8 @@ public:
 
             if (l == 0) {
                 VectorXd tempB5 = PhyConst::mu * (
-                    E.segment(0, N).cwiseMin(0.0).cwiseProduct(u.row(LR).transpose()) +
-                    E.segment(0, N).cwiseMax(0.0).cwiseProduct(u.row(LL).transpose())
+                    E.segment(0, N).cwiseMin(0.0).cwiseProduct(u.row(LL).transpose()) +
+                    E.segment(0, N).cwiseMax(0.0).cwiseProduct(u.row(LR).transpose())
                     );
 
                 VectorXd tempB6 = beta0 * (u.row(LR) - u.row(LL)).transpose() / h;
@@ -422,24 +423,47 @@ public:
     }
 
     void RK() {
-        MatrixXd coeff = C;
+        MatrixXd C_pre = C;
         auto k1 = L();
-        k1 = coeff + dt * k1;
+        k1 = C_pre + dt * k1;
         setn(k1);
         auto k2 = L();
-        k2 = 3.0 / 4.0 * coeff + 1.0 / 4.0 * k1 + 1.0 / 4.0 * dt * k2;
+        k2 = 3.0 / 4.0 * C_pre + 1.0 / 4.0 * k1 + 1.0 / 4.0 * dt * k2;
         setn(k2);
         auto k3 = L();
-        k3 = 1.0 / 3.0 * coeff + 2.0 / 3.0 * k2 + 2.0 / 3.0 * dt * k3;
+        k3 = 1.0 / 3.0 * C_pre + 2.0 / 3.0 * k2 + 2.0 / 3.0 * dt * k3;
         setn(k3);
     }
     void RKDDG() {
         VectorXd Ypre, Ypost;
-        VectorXd X = VectorXd::LinSpaced(10000, Xa, Xb);
+        double TT = 0;
+        VectorXd X = VectorXd::LinSpaced(1000, Xa, Xb);
         do {
             Ypre = getn(X);
+            // drawn();
             RK();
             Ypost = getn(X);
-        } while ((Ypre - Ypost).lpNorm<Infinity>() > 1e-4);
+            TT += dt;
+        } while ((Ypre - Ypost).lpNorm<Infinity>() > 1e-5 || (Ypre-Ypost).lpNorm<2>() > 1e-5);
+        T= TT;
+    }
+    void drawn() {
+
+        // 生成x值：从-10到10的200个点
+        const int num_points = 1000;
+        Eigen::VectorXd x = Eigen::VectorXd::LinSpaced(num_points, 0, 0.6);
+        auto y = getn(x);
+        // 保存数据到文件
+        std::ofstream file("data.txt");
+        if (file.is_open()) {
+            for (int i = 0; i < x.size(); ++i) {
+                file << x(i) << " " << y(i) << "\n";
+            }
+            file.close();
+            std::cout << "数据已保存到 data.txt" << std::endl;
+        }
+        else {
+            std::cerr << "无法打开文件！" << std::endl;
+        }
     }
 };

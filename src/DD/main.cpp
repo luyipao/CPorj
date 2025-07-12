@@ -7,18 +7,27 @@ using namespace std;
 
 int main() {
     int k = 1;
-    double Xa = 0.0;
-    double Xb = 0.6;
+    double Xa = 0.00;
+    double Xb = 0.60;
 
     // double beta0 = (k + 1) * (k + 1);
     // double beta1 = 1 / (k + 1.0) / (2 * k);
-    double beta0 = 2.0;
+    double beta0 = 1;
     double beta1 = 1.0 / 12.0;
-    double T = 0.3;
-    double CFL = 1;
+    double T = 0.4;
+    double CFL;
+    if (k == 0) {
+        CFL = 1;
+    }
+    else if (k == 1) {
+        CFL = 1;
+    }
+    else {
+        CFL = 1;
+    }
 
     // construct initial function coeff
-    vector<int> Ns = { 24, 48, 96, 192,384, 768}; // 网格数
+    vector<int> Ns = { 25, 50, 100, 200, 400}; // 网格数
     vector<VectorXd> h_values;
     vector<double> L2_errors(Ns.size(), 0.0);
     vector<double> LInf_errors(Ns.size(), 0.0);
@@ -54,6 +63,7 @@ int main() {
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double, std::micro> duration = end - start;
         cout << "Time s = " << duration.count() / 1e6 << " seconds" << endl;
+        cout << "T = " << ddgic.T << ", dt = " << ddgic.dt << endl;
         VectorXd X = VectorXd::LinSpaced(640000 + 1, Xa, Xb);
         VectorXd Y = ddgic.getE(X);
         draw(ddgic.C);
@@ -67,7 +77,7 @@ int main() {
         VectorXd error_vec = h_values[i] - h_values[i + 1];
 
         double h_i = (Xb - Xa) / Ns[i];
-        L2_errors[i] = error_vec.norm(); // 近似L2积分范数
+        L2_errors[i] = error_vec.norm() * sqrt(0.60 / error_vec.size()); // 近似L2积分范数
         LInf_errors[i] = error_vec.lpNorm<Infinity>();
 
         std::cout << "N: " << Ns[i] << " (h=" << h_i << ")"
