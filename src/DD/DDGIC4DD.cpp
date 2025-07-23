@@ -121,7 +121,7 @@ public:
 
         // 获取所有点所在的单元格索引
         const VectorXi bins = discretize_uniform(X, mesh);
-        #pragma omp parallel for
+#pragma omp parallel for
         for (int i = 0; i < X.size(); ++i) {
             const double xi = X(i);
             if (xi == Xa) {
@@ -323,13 +323,13 @@ public:
         VectorXd E = E_all.head(num_mesh_points);
         vector<VectorXd> E_gauss(N);
 
-        #pragma omp parallel for
+#pragma omp parallel for
         for (int j = 0; j < N; ++j) {
             E_gauss[j] = E_all.segment(num_mesh_points + j * num_gauss_nodes, num_gauss_nodes);
         }
 
         vector<vector<VectorXd>> phi_x_gauss(N, vector<VectorXd>(k + 1));
-        #pragma omp parallel for
+#pragma omp parallel for
         for (int j = 0; j < N; ++j) {
             for (int i = 0; i <= k; ++i) {
                 phi_x_gauss[j][i] = phi_x(gaussPoints[j].first, i);
@@ -367,7 +367,7 @@ public:
 
         // 计算积分项D
         MatrixXd D = MatrixXd::Zero(k + 1, N);
-        #pragma omp parallel for
+#pragma omp parallel for
         for (int j = 0; j < N; ++j) {
             auto [nodes, weights] = gaussPoints[j];
             for (int l = 0; l <= k; ++l) {
@@ -379,7 +379,7 @@ public:
         // 计算界面修正项E
         MatrixXd E_mat = MatrixXd::Zero(k + 1, N);
         if (k >= 1) {
-            #pragma omp parallel for
+#pragma omp parallel for
             for (int l = 1; l <= k; l++) {
                 for (int j = 0; j < N; j++) {
                     double term1 = (u(RR, j) - u(RL, j)) * l / h;

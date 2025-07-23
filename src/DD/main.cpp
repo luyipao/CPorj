@@ -31,7 +31,7 @@ int main() {
         CFL = 0.1;
     }
     // construct initial function coeff
-    vector<int> Ns = {80, 160, 320}; // 网格数
+    vector<int> Ns = { 80, 160, 320 }; // 网格数
     vector<vector<VectorXd>> Sols;
     vector<VectorXd> h_values;
     vector<double> L2_errors(Ns.size(), 0.0);
@@ -77,11 +77,11 @@ int main() {
     // --- 误差分析 ---
     const std::string filename = "ErrorAnalysis.txt";
     std::ofstream result_file(filename, std::ios_base::app);
-   if (!result_file.is_open()) {
+    if (!result_file.is_open()) {
         std::cerr << "错误: 无法打开结果文件 " << filename << std::endl;
         return 1; // 返回错误码
     }
-    
+
 
     auto end = std::chrono::system_clock::now();
     std::time_t end_time = std::chrono::system_clock::to_time_t(end);
@@ -92,18 +92,18 @@ int main() {
 
     result_file << std::fixed << std::setprecision(6);
 
-    result_file << "k = " << k << ", beta0 = " << beta0 << ", beta1 = " << beta1 
-                << ", T = " << T << ", CFL = " << CFL << std::endl << std::endl;
+    result_file << "k = " << k << ", beta0 = " << beta0 << ", beta1 = " << beta1
+        << ", T = " << T << ", CFL = " << CFL << std::endl << std::endl;
 
     for (size_t i = 0; i < Ns.size() - 1; ++i) {
         Eigen::VectorXd error_vec = h_values[i] - h_values[i + 1];
         double h_i = (Xb - Xa) / Ns[i];
-        L2_errors[i] = error_vec.norm() * sqrt((Xb - Xa) / error_vec.size()); 
+        L2_errors[i] = error_vec.norm() * sqrt((Xb - Xa) / error_vec.size());
         LInf_errors[i] = error_vec.lpNorm<Eigen::Infinity>();
 
         result_file << "N: " << Ns[i] << " (h=" << h_i << ")"
-                    << ", L2 Error: "  << L2_errors[i]
-                    << ", LInf Error: " << LInf_errors[i] << std::endl;
+            << ", L2 Error: " << L2_errors[i]
+            << ", LInf Error: " << LInf_errors[i] << std::endl;
     }
 
     // --- 计算收敛阶 ---
@@ -112,11 +112,11 @@ int main() {
         double l2_order = log(L2_errors[i] / L2_errors[i + 1]) / log(2.0);
         double l_inf_order = log(LInf_errors[i] / LInf_errors[i + 1]) / log(2.0);
 
-        result_file << "Order from N=" << Ns[i] << " to N=" << Ns[i+1] << ":"
-                    << " L2 Order = " << l2_order
-                    << ", L_inf Order = " << l_inf_order << std::endl;
+        result_file << "Order from N=" << Ns[i] << " to N=" << Ns[i + 1] << ":"
+            << " L2 Order = " << l2_order
+            << ", L_inf Order = " << l_inf_order << std::endl;
     }
-    result_file << "\n\n"; 
+    result_file << "\n\n";
     result_file.close();
     std::cout << "计算完成，结果已追加到 " << filename << std::endl;
     std::chrono::duration<double> elapsed_seconds = end - start;
