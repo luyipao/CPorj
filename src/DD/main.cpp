@@ -82,9 +82,8 @@ int main() {
         return 1; // 返回错误码
     }
     
-    // --- 2. 获取并写入当前时间戳 ---
-    auto end = std::chrono::system_clock::now();
 
+    auto end = std::chrono::system_clock::now();
     std::time_t end_time = std::chrono::system_clock::to_time_t(end);
     // 使用 std::put_time (C++11) 或 strftime 来格式化时间
     result_file << "======================================================================\n";
@@ -109,7 +108,7 @@ int main() {
 
     // --- 计算收敛阶 ---
     result_file << "\n--- 收敛阶 ---\n";
-    for (size_t i = 0; i < Ns.size() - 2; ++i) { // 注意循环边界，避免访问越界
+    for (int i = 0; i < static_cast<int>(Ns.size()) - 2; ++i) { // 注意循环边界，避免访问越界
         double l2_order = log(L2_errors[i] / L2_errors[i + 1]) / log(2.0);
         double l_inf_order = log(LInf_errors[i] / LInf_errors[i + 1]) / log(2.0);
 
@@ -117,9 +116,13 @@ int main() {
                     << " L2 Order = " << l2_order
                     << ", L_inf Order = " << l_inf_order << std::endl;
     }
-    
     result_file << "\n\n"; 
     result_file.close();
     std::cout << "计算完成，结果已追加到 " << filename << std::endl;
+    std::chrono::duration<double> elapsed_seconds = end - start;
+
+    // 5. 输出结果
+    std::cout << "运行时间: " << elapsed_seconds.count() << "s" << std::endl;
+
     return 0;
 }

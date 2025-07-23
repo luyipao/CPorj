@@ -1,6 +1,6 @@
 .PHONY: all test draw
 all:
-	g++ main.cpp ./../functions/*.cpp -O3 -march=native -ffast-math -DNDEBUG -o main  -lgslcblas -lm -lgsl
+	g++ -O3 -march=native  -fopenmp -ffast-math -DNDEBUG main.cpp ./../functions/*.cpp  -o  main  -lgslcblas -lm -lgsl
 	./main
 draw:
 	g++ draw.cpp ./../functions/*.cpp -O3 -o draw  -lgslcblas -lm -lgsl

@@ -3,7 +3,7 @@ import datetime
 import math
 
 import n_d
-import DDGIC4DD
+import DDGIC4DD 
 
 def main():
     start = datetime.datetime.now()

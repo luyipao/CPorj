@@ -65,3 +65,12 @@ $$
 ## 数值模拟
 
 目前没有
+
+```
+sudo apt install make
+sudo apt install build-essential
+sudo apt install libeigen3-dev
+sudo apt install libgsl-dev
+sudo ln -s /usr/include/eigen3/Eigen /usr/include/Eigen
+```
+

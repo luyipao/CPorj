@@ -84,6 +84,8 @@
         "variant": "cpp",
         "codecvt": "cpp",
         "netfwd": "cpp",
-        "__nullptr": "cpp"
+        "__nullptr": "cpp",
+        "filesystem": "cpp",
+        "ios": "cpp"
     }
 }
