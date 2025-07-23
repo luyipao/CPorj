@@ -1,12 +1,9 @@
 ## 模型
 
 $$
-\begin{aligned}
-
 &n_{t}-(\mu En)_{x}=\tau\theta n_{xx},\\
 &\varphi_{xx}=\frac{e}{\varepsilon}(n-n_{d}), \\
 & E = -\phi_x
-\end{aligned}
 $$
 
 其中未知量是$n,\phi,E$，其余为常量（$\mathcal{k}$表示玻尔兹曼常量）。假设$n$光滑，且具有周期边界条件。
