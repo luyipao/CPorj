@@ -14,9 +14,6 @@ int main() {
     int k = 2;
     double Xa = 0.00;
     double Xb = 0.60;
-
-    // double beta0 = (k + 1) * (k + 1);
-    // double beta1 = 1 / (k + 1.0) / (2 * k);
     double beta0 = 32;
     double beta1 = 1.0 / 12.0;
     double T = 1;
