@@ -59,7 +59,7 @@ public:
         A_sparse.resize((k + 1) * N, (k + 1) * N);
         vector<Eigen::Triplet<double>> tripletList;
         tripletList.reserve(N * (k + 1) * (k + 1));
-        for (int j = 0; j < N; ++j) { // 遍历 N 个对角块
+        for (int j = 0; j < N; ++j) {
             int block_offset = j * (k + 1);
             for (int l = 0; l <= k; ++l) { // 块内行索引
                 for (int m = 0; m <= k; ++m) { // 块内列索引
@@ -180,11 +180,8 @@ public:
         auto [nodes, weights] = gaussLegendrePoints(0, 0.6);
         double E0 = 0;
         E0 += getPriE_x(nodes).dot(weights);
-        auto [nodes2, weights2] = gaussLegendrePoints(0, 0.4);
-        E0 += getPriE_x(nodes2).dot(weights2);
-        E0 += 0.4 * getPriE_x(0.6);
         E0 *= PhyConst::e / PhyConst::epsilon;
-        VectorXd y = -PhyConst::e / PhyConst::epsilon * getPriE_x(X).array() + getPriE_x(0) + E0 - 1.5;
+        VectorXd y = -PhyConst::e / PhyConst::epsilon * getPriE_x(X).array() + E0 - 1.5;
         return y;
     }
 
@@ -308,34 +305,11 @@ public:
             uxx(LL, 0) = uxx(RL, N - 1);
             uxx(RR, N - 1) = uxx(LR, 0);
         }
-
-        // 储存电场E，和高斯积分点上的E，高斯积分点上的phi_x
-        /**
-        VectorXd E = getE(mesh);
-        vector<VectorXd> E_gauss;
-        vector<vector<VectorXd>> phi_x_gauss(N, vector<VectorXd>(k + 1));
-        VectorXd combineMeshGauss;
-        combineMeshGauss << mesh;
-        for (int j = 0; j < N; ++j) {
-            auto [nodes, weights] = gaussPoints[j];
-            combineMeshGauss << nodes;
-            for (int i = 0; i <= k; ++i) {
-                phi_x_gauss[j][i] = phi_x(nodes, i);
-            }
-        }
-        VectorXd EHelp = getE(combineMeshGauss);
-
-        for (int j = 0; j < N; ++j) {
-            E = EHelp.head(mesh.size());
-            E_gauss.emplace_back(EHelp.segment(mesh.size() + j * gaussPoints[0].first.size(), gaussPoints[0].first.size()));
-        }
-
-*/
-// 1. 构建一个包含所有需要计算 E 的点的组合向量
-//    预先计算总尺寸，避免动态增长
+        // 1. 构建一个包含所有需要计算 E 的点的组合向量
+        //    预先计算总尺寸，避免动态增长
         const int num_mesh_points = mesh.size();
         const int num_gauss_nodes = gaussPoints[0].first.size(); // 假设所有单元的高斯点数相同
-        const int total_points = num_mesh_points + N * num_gauss_nodes;
+        const int total_points = num_mesh_points +   * num_gauss_nodes;
 
         VectorXd combined_points(total_points);
         combined_points.head(num_mesh_points) = mesh;
@@ -364,7 +338,7 @@ public:
             E.segment(1, N).cwiseMax(0.0).cwiseProduct(u.row(RR).transpose())
             );
 
-        VectorXd tempB2 = beta0 * (u.row(RR) - u.row(RL)).transpose() / h;
+        VectorXd tempB2 = beta0 / h * (u.row(RR) - u.row(RL)).transpose();
         VectorXd tempB3 = 0.5 * (ux.row(RR) + ux.row(RL)).transpose();
         VectorXd tempB4 = beta1 * h * (uxx.row(RR) - uxx.row(RL)).transpose();
 
@@ -435,17 +409,15 @@ public:
         setn(k3);
     }
     void RKDDG() {
-        VectorXd Ypre, Ypost;
         double TT = 0;
-        VectorXd X = VectorXd::LinSpaced(1000, Xa, Xb);
+        vector<VectorXd> Sols;
+        VectorXd X = VectorXd::LinSpaced(10000 + 1, Xa, Xb);
         do {
-            Ypre = getn(X);
-            // drawn();
+            //VectorXd Y = getn(X);
+           // Sols.emplace_back(Y);
             RK();
-            Ypost = getn(X);
             TT += dt;
-        } while ((Ypre - Ypost).lpNorm<Infinity>() > 1e-5 || (Ypre-Ypost).lpNorm<2>() > 1e-5);
-        T= TT;
+        } while (TT < T);
     }
     void drawn() {
 
