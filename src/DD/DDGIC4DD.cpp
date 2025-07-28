@@ -107,47 +107,28 @@ public:
      * @return VectorXd      在每个点 X(i) 处的定积分
      */
     VectorXd getPriE_x(const VectorXd& X) {
-        const MatrixXd Coeff = C - n_d_C; // 被积函数的多项式系数b
-        VectorXd Y(X.size());
-        Y.setZero();
+        const MatrixXd integrand_C = C - n_d_C; // 被积函数的多项式系数b
+        VectorXd Y = VectorXd::Zero(X.size());
 
-        // 预计算系数矩阵的累积和，以避免在循环中重复求和。
-        // CumSumCoeff(m, j) = sum_{i=0 to j} Coeff(m, i)
-        MatrixXd CumSumCoeff(k + 1, N);
-        CumSumCoeff.col(0) = Coeff.col(0);
+        // 预计算系数矩阵的累积和
+        MatrixXd cumIntegrand_C(k + 1, N);
+        cumIntegrand_C.col(0) = integrand_C.col(0);
         for (int j = 1; j < N; ++j) {
-            CumSumCoeff.col(j) = CumSumCoeff.col(j - 1) + Coeff.col(j);
+            cumIntegrand_C.col(j) = cumIntegrand_C.col(j - 1) + integrand_C.col(j);
         }
 
-        // 获取所有点所在的单元格索引
         const VectorXi bins = discretize_uniform(X, mesh);
-#pragma omp parallel for
+        //#pragma omp parallel for
         for (int i = 0; i < X.size(); ++i) {
-            const double xi = X(i);
-            if (xi == Xa) {
-                Y(i) = 0.0;
-                continue;
-            }
-            const int bin_idx = bins(i);
-            if (bin_idx < 0) {
-                Y(i) = std::numeric_limits<double>::quiet_NaN();
-                continue;
-            }
-            const double u = (xi - mesh(bin_idx)) / h;
-            double integral_at_xi = 0.0;
+            const int idx = bins(i);
+            const double cell_x = (X(i) - mesh(idx)) / h;  
 
-            // 对每个多项式阶数 m 进行计算
             for (int m = 0; m <= k; ++m) {
-                const double m_plus_1 = static_cast<double>(m + 1);
-                double full_cells_integral_contrib = 0.0;
-                if (bin_idx > 0) {
-                    // sum(Coeff(m, 0:bin_idx-1)) * h / (m+1)
-                    full_cells_integral_contrib = CumSumCoeff(m, bin_idx - 1) * h / m_plus_1;
+                if (idx > 0) {
+                    Y(i) += cumIntegrand_C(m, idx - 1) * h / (m + 1);
                 }
-                double partial_cell_integral_contrib = Coeff(m, bin_idx) * h * pow(u, m_plus_1) / m_plus_1;
-                integral_at_xi += full_cells_integral_contrib + partial_cell_integral_contrib;
+                Y(i) += integrand_C(m, idx) * h / (m + 1) * pow(cell_x, m + 1);
             }
-            Y(i) = integral_at_xi;
         }
         return Y;
     }
@@ -246,6 +227,7 @@ public:
 
     VectorXd getn_x(const VectorXd& X) {
         VectorXd result(X.size());
+        
         for (int i = 0; i < X.size(); ++i) {
             result(i) = getn_x(X(i));
         }
@@ -254,6 +236,7 @@ public:
 
     VectorXd phi_x(const VectorXd& X, int k) {
         VectorXd Y(X.size());
+        
         for (int i = 0; i < X.size(); ++i) {
             double xi = X(i);
             size_t idx = discretize(xi);
@@ -314,6 +297,7 @@ public:
 
         VectorXd combined_points(total_points);
         combined_points.head(num_mesh_points) = mesh;
+        //#pragma omp parallel for
         for (int j = 0; j < N; ++j) {
             const auto& [nodes, weights] = gaussPoints[j];
             combined_points.segment(num_mesh_points + j * num_gauss_nodes, num_gauss_nodes) = nodes;
@@ -323,13 +307,13 @@ public:
         VectorXd E = E_all.head(num_mesh_points);
         vector<VectorXd> E_gauss(N);
 
-#pragma omp parallel for
+
         for (int j = 0; j < N; ++j) {
             E_gauss[j] = E_all.segment(num_mesh_points + j * num_gauss_nodes, num_gauss_nodes);
         }
 
         vector<vector<VectorXd>> phi_x_gauss(N, vector<VectorXd>(k + 1));
-#pragma omp parallel for
+
         for (int j = 0; j < N; ++j) {
             for (int i = 0; i <= k; ++i) {
                 phi_x_gauss[j][i] = phi_x(gaussPoints[j].first, i);
@@ -341,11 +325,10 @@ public:
             E.segment(1, N).cwiseMin(0.0).cwiseProduct(u.row(RL).transpose()) +
             E.segment(1, N).cwiseMax(0.0).cwiseProduct(u.row(RR).transpose())
             );
-
         VectorXd tempB2 = beta0 / h * (u.row(RR) - u.row(RL)).transpose();
         VectorXd tempB3 = 0.5 * (ux.row(RR) + ux.row(RL)).transpose();
         VectorXd tempB4 = beta1 * h * (uxx.row(RR) - uxx.row(RL)).transpose();
-
+        // #pragma omp parallel for
         for (int l = 0; l <= k; l++) {
             B.row(l) = (tempB1 + PhyConst::tau * PhyConst::theta *
                 (tempB2 + tempB3 + tempB4)).transpose();
@@ -367,7 +350,7 @@ public:
 
         // 计算积分项D
         MatrixXd D = MatrixXd::Zero(k + 1, N);
-#pragma omp parallel for
+        // #pragma omp parallel for
         for (int j = 0; j < N; ++j) {
             auto [nodes, weights] = gaussPoints[j];
             for (int l = 0; l <= k; ++l) {
@@ -379,7 +362,7 @@ public:
         // 计算界面修正项E
         MatrixXd E_mat = MatrixXd::Zero(k + 1, N);
         if (k >= 1) {
-#pragma omp parallel for
+
             for (int l = 1; l <= k; l++) {
                 for (int j = 0; j < N; j++) {
                     double term1 = (u(RR, j) - u(RL, j)) * l / h;
@@ -426,12 +409,9 @@ public:
         } while (TT < T);
     }
     void drawn() {
-
-        // 生成x值：从-10到10的200个点
         const int num_points = 1000;
         Eigen::VectorXd x = Eigen::VectorXd::LinSpaced(num_points, 0, 0.6);
         auto y = getn(x);
-        // 保存数据到文件
         std::ofstream file("data.txt");
         if (file.is_open()) {
             for (int i = 0; i < x.size(); ++i) {

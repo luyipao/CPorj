@@ -1,4 +1,4 @@
-.PHONY: all test draw install-deps
+.PHONY: all test draw deps
 all:
 	g++ -O3 -march=native  -fopenmp -ffast-math -DNDEBUG main.cpp ./../functions/*.cpp  -o  main  -lgslcblas -lm -lgsl
 	./main
@@ -10,9 +10,7 @@ test:
 	g++ test.cpp ./../functions/*.cpp -O3 -o test  -lgslcblas -lm -lgsl
 	./test
 
-
-
-install-deps:
+req:
 	@echo "--- Updating package lists ---"
 	sudo apt update
 	@echo "--- Installing dependencies ---"

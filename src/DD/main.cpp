@@ -2,9 +2,9 @@
 #include "draw.cpp"
 #include "../include/gaussLegendre.h"
 #include "./DDGIC4DD.cpp"
-#include <chrono>       // 用于获取时间
-#include <ctime>        // 用于格式化时间
-#include <iomanip>      // 用于格式化输出 (例如 setprecision)
+#include <chrono>       
+#include <ctime>
+#include <iomanip>     
 using namespace Eigen;
 using namespace std;
 
@@ -14,21 +14,21 @@ int main() {
     int k = 2;
     double Xa = 0.00;
     double Xb = 0.60;
-    double beta0 = 32;
+    double beta0 = 8;
     double beta1 = 1.0 / 12.0;
     double T = 1;
     double CFL;
     if (k == 0) {
-        CFL = 0.1;
+        CFL = 1;
     }
     else if (k == 1) {
-        CFL = 0.1;
+        CFL = 0.5;
     }
     else {
-        CFL = 0.1;
+        CFL = 0.5;
     }
     // construct initial function coeff
-    vector<int> Ns = { 80, 160, 320 }; // 网格数
+    vector<int> Ns = { 80, 160, 320, 1280 }; // 网格数
     vector<vector<VectorXd>> Sols;
     vector<VectorXd> h_values;
     vector<double> L2_errors(Ns.size(), 0.0);
@@ -70,6 +70,7 @@ int main() {
         VectorXd X = VectorXd::LinSpaced(10000 + 1, Xa, Xb);
         VectorXd Y = ddgic.getn(X);
         h_values.push_back(Y);
+        ddgic.drawn();
     }
     // --- 误差分析 ---
     const std::string filename = "ErrorAnalysis.txt";
