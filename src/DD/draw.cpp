@@ -39,7 +39,6 @@ void draw(const MatrixXd& C) {
             file << x(i) << " " << y(i) << "\n";
         }
         file.close();
-        std::cout << "数据已保存到 data.txt" << std::endl;
     }
     else {
         std::cerr << "无法打开文件！" << std::endl;

@@ -2,42 +2,34 @@
 #include "draw.cpp"
 #include "../include/gaussLegendre.h"
 #include "./DDGIC4DD.cpp"
+#include <chrono>       
+#include <ctime>
+#include <iomanip>     
 using namespace Eigen;
 using namespace std;
 
 int main() {
-    int k = 0;
+    auto start = std::chrono::system_clock::now();
+    std::time_t start_time = std::chrono::system_clock::to_time_t(start);
+    int k = 2;
     double Xa = 0.00;
     double Xb = 0.60;
-
-    // double beta0 = (k + 1) * (k + 1);
-    // double beta1 = 1 / (k + 1.0) / (2 * k);
-
-    double beta0;
-    if (k == 0) {
-        beta0 = 1.0;
-    }
-    else if (k == 1) {
-        beta0 = 2.0;
-    }
-    else {
-        beta0 = 4.0;
-    }
+    double beta0 = 8;
     double beta1 = 1.0 / 12.0;
-    double T = 0.4;
+    double T = 1;
     double CFL;
     if (k == 0) {
         CFL = 1;
     }
     else if (k == 1) {
-        CFL = 1;
+        CFL = 0.5;
     }
     else {
-        CFL = 1;
+        CFL = 0.5;
     }
-
     // construct initial function coeff
-    vector<int> Ns = { 25, 50, 100, 200, 400}; // 网格数
+    vector<int> Ns = { 80, 160, 320, 1280 }; // 网格数
+    vector<vector<VectorXd>> Sols;
     vector<VectorXd> h_values;
     vector<double> L2_errors(Ns.size(), 0.0);
     vector<double> LInf_errors(Ns.size(), 0.0);
@@ -65,48 +57,70 @@ int main() {
             n_C.col(j) = M.colPivHouseholderQr().solve(b);
         }
         DDGIC4DD ddgic = DDGIC4DD(N, Xa, Xb, k, beta0, beta1, T, CFL);
+        // ddgic.dt = 0.0000225;
         ddgic.setn(n_C);
         ddgic.setn_d(n_C);
-        cout << "\n--- N = " << N << " ---" << endl;
-        auto start = std::chrono::high_resolution_clock::now();
+        // cout << "--- N = " << N << " ---" << endl;
+        // auto start = std::chrono::high_resolution_clock::now();
         ddgic.RKDDG();
-        auto end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double, std::micro> duration = end - start;
-        cout << "Time s = " << duration.count() / 1e6 << " seconds" << endl;
-        cout << "T = " << ddgic.T << ", dt = " << ddgic.dt << endl;
-        VectorXd X = VectorXd::LinSpaced(640000 + 1, Xa, Xb);
-        VectorXd Y = ddgic.getE(X);
-        draw(ddgic.C);
+        // auto end = std::chrono::high_resolution_clock::now();
+        // std::chrono::duration<double, std::micro> duration = end - start;
+        // cout << "Time s = " << duration.count() / 1e6 << " seconds" << endl;
+        // cout << "T = " << ddgic.T << ", dt = " << ddgic.dt << endl;
+        VectorXd X = VectorXd::LinSpaced(10000 + 1, Xa, Xb);
+        VectorXd Y = ddgic.getn(X);
         h_values.push_back(Y);
+        ddgic.drawn();
     }
     // --- 误差分析 ---
-    cout << "k = " << k << ", beta0 = " << beta0 << ", beta1 = " << beta1 << ", T = " << T << ", CFL = " << CFL << endl;
+    const std::string filename = "ErrorAnalysis.txt";
+    std::ofstream result_file(filename, std::ios_base::app);
+    if (!result_file.is_open()) {
+        std::cerr << "错误: 无法打开结果文件 " << filename << std::endl;
+        return 1; // 返回错误码
+    }
+
+
+    auto end = std::chrono::system_clock::now();
+    std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+    // 使用 std::put_time (C++11) 或 strftime 来格式化时间
+    result_file << "======================================================================\n";
+    result_file << " 开始于: " << std::ctime(&start_time) << " 结束于：" << std::ctime(&end_time); // ctime 会自带换行符
+    result_file << "======================================================================\n";
+
+    result_file << std::fixed << std::setprecision(6);
+
+    result_file << "k = " << k << ", beta0 = " << beta0 << ", beta1 = " << beta1
+        << ", T = " << T << ", CFL = " << CFL << std::endl << std::endl;
 
     for (size_t i = 0; i < Ns.size() - 1; ++i) {
-
-        VectorXd error_vec = h_values[i] - h_values[i + 1];
-
+        Eigen::VectorXd error_vec = h_values[i] - h_values[i + 1];
         double h_i = (Xb - Xa) / Ns[i];
-        L2_errors[i] = error_vec.norm() * sqrt(0.60 / error_vec.size()); // 近似L2积分范数
-        LInf_errors[i] = error_vec.lpNorm<Infinity>();
+        L2_errors[i] = error_vec.norm() * sqrt((Xb - Xa) / error_vec.size());
+        LInf_errors[i] = error_vec.lpNorm<Eigen::Infinity>();
 
-        std::cout << "N: " << Ns[i] << " (h=" << h_i << ")"
+        result_file << "N: " << Ns[i] << " (h=" << h_i << ")"
             << ", L2 Error: " << L2_errors[i]
             << ", LInf Error: " << LInf_errors[i] << std::endl;
     }
 
     // --- 计算收敛阶 ---
-    cout << "\n--- Convergence Order Analysis ---" << endl;
-    for (size_t i = 0; i < Ns.size() - 1; ++i) {
-
+    result_file << "\n--- 收敛阶 ---\n";
+    for (int i = 0; i < static_cast<int>(Ns.size()) - 2; ++i) { // 注意循环边界，避免访问越界
         double l2_order = log(L2_errors[i] / L2_errors[i + 1]) / log(2.0);
         double l_inf_order = log(LInf_errors[i] / LInf_errors[i + 1]) / log(2.0);
 
-        std::cout  << "Order from N=" << Ns[i] << " to N=" << Ns[i + 1] << ":"
+        result_file << "Order from N=" << Ns[i] << " to N=" << Ns[i + 1] << ":"
             << " L2 Order = " << l2_order
             << ", L_inf Order = " << l_inf_order << std::endl;
     }
+    result_file << "\n\n";
+    result_file.close();
+    std::cout << "计算完成，结果已追加到 " << filename << std::endl;
+    std::chrono::duration<double> elapsed_seconds = end - start;
+
+    // 5. 输出结果
+    std::cout << "运行时间: " << elapsed_seconds.count() << "s" << std::endl;
 
     return 0;
-    // 计算误差
 }
