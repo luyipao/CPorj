@@ -607,3 +607,20 @@ N: 640 (h=0.000937), L2 Error: 0.203200, LInf Error: 2.617410
 Order from N=80 to N=160: L2 Order = 2.918255, L_inf Order = 2.864169
 Order from N=160 to N=320: L2 Order = 2.984601, L_inf Order = 3.011545
 Order from N=320 to N=640: L2 Order = 2.996427, L_inf Order = 2.996916
+
+
+======================================================================
+ 开始于: Wed Jul 30 22:46:56 2025
+ 结束于：Sat Aug  2 02:34:53 2025
+======================================================================
+k = 1, beta0 = 32.000000, beta1 = 0.083333, T = 1.000000, CFL = 0.125000
+
+N: 80 (h=0.007500), L2 Error: 795.664959, LInf Error: 10324.055693
+N: 160 (h=0.003750), L2 Error: 195.263763, LInf Error: 2442.916540
+N: 320 (h=0.001875), L2 Error: 48.601646, LInf Error: 651.608453
+N: 640 (h=0.000937), L2 Error: 12.138157, LInf Error: 160.196562
+
+--- 收敛阶 ---
+Order from N=80 to N=160: L2 Order = 2.026737, L_inf Order = 2.079333
+Order from N=160 to N=320: L2 Order = 2.006347, L_inf Order = 1.906527
+Order from N=320 to N=640: L2 Order = 2.001456, L_inf Order = 2.024162
