@@ -6,13 +6,23 @@ using namespace Eigen;
 using namespace std;
 
 int main() {
-    int k = 1;
+    int k = 0;
     double Xa = 0.00;
     double Xb = 0.60;
 
     // double beta0 = (k + 1) * (k + 1);
     // double beta1 = 1 / (k + 1.0) / (2 * k);
-    double beta0 = 1;
+
+    double beta0;
+    if (k == 0) {
+        beta0 = 1.0;
+    }
+    else if (k == 1) {
+        beta0 = 2.0;
+    }
+    else {
+        beta0 = 4.0;
+    }
     double beta1 = 1.0 / 12.0;
     double T = 0.4;
     double CFL;
@@ -70,7 +80,7 @@ int main() {
         h_values.push_back(Y);
     }
     // --- 误差分析 ---
-    cout << "beta0 = " << beta0 << ", beta1 = " << beta1 << ", T = " << T << ", CFL = " << CFL << endl;
+    cout << "k = " << k << ", beta0 = " << beta0 << ", beta1 = " << beta1 << ", T = " << T << ", CFL = " << CFL << endl;
 
     for (size_t i = 0; i < Ns.size() - 1; ++i) {
 
@@ -92,7 +102,7 @@ int main() {
         double l2_order = log(L2_errors[i] / L2_errors[i + 1]) / log(2.0);
         double l_inf_order = log(LInf_errors[i] / LInf_errors[i + 1]) / log(2.0);
 
-        std::cout << "Order from N=" << Ns[i] << " to N=" << Ns[i + 1] << ":"
+        std::cout  << "Order from N=" << Ns[i] << " to N=" << Ns[i + 1] << ":"
             << " L2 Order = " << l2_order
             << ", L_inf Order = " << l_inf_order << std::endl;
     }

@@ -363,7 +363,6 @@ public:
             E.segment(1, N).cwiseMin(0.0).cwiseProduct(u.row(RL).transpose()) +
             E.segment(1, N).cwiseMax(0.0).cwiseProduct(u.row(RR).transpose())
             );
-
         VectorXd tempB2 = beta0 * (u.row(RR) - u.row(RL)).transpose() / h;
         VectorXd tempB3 = 0.5 * (ux.row(RR) + ux.row(RL)).transpose();
         VectorXd tempB4 = beta1 * h * (uxx.row(RR) - uxx.row(RL)).transpose();
@@ -377,7 +376,6 @@ public:
                     E.segment(0, N).cwiseMin(0.0).cwiseProduct(u.row(LL).transpose()) +
                     E.segment(0, N).cwiseMax(0.0).cwiseProduct(u.row(LR).transpose())
                     );
-
                 VectorXd tempB6 = beta0 * (u.row(LR) - u.row(LL)).transpose() / h;
                 VectorXd tempB7 = 0.5 * (ux.row(LR) + ux.row(LL)).transpose();
                 VectorXd tempB8 = beta1 * h * (uxx.row(LR) - uxx.row(LL)).transpose();
@@ -444,9 +442,9 @@ public:
             RK();
             Ypost = getn(X);
             TT += dt;
-        } while ((Ypre - Ypost).lpNorm<Infinity>() > 1e-5 || (Ypre-Ypost).lpNorm<2>() > 1e-5);
-        T= TT;
-    }
+        } while (TT < T);//((Ypre - Ypost).lpNorm<Infinity>() > 1e-5 || (Ypre-Ypost).lpNorm<2>() > 1e-5);
+        T = TT;
+    } 
     void drawn() {
 
         // 生成x值：从-10到10的200个点
